@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="icon" type="image/png" href="https://ipfs.io/images/favicon.png">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            var prev;
+            $('#textArea1').on("change paste keyup", function () {
+                //var prev = $(this).data('prev');
+                var current = $(this).val();
+                console.log("Prev value " + prev);
+                console.log("New value " + current);
+                prev = current;
+                var pos = $("#textArea1").prop('selectionStart');
+                console.log(pos);
+                console.log(current[pos - 1]);
+                $.get("/updateCrdt", { val: current[pos - 1], index: pos-1 }, function (data) { });
+            });
+
+        });
+    </script>
+    <title>Distributed Editor</title>
+    <style>
+
+        body {
+            background: #D1F0B2;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+            body > div {
+                padding: 10px;
+                margin: auto;
+            }
+
+        textarea {
+            width: 75%;
+            height: 650px;
+            background: #FAFBF9;
+            margin-top: 14px;
+            overflow: hidden;
+        }
+
+        h2,
+        h1 {
+            color: #4F9329;
+        }
+    
+    </style>
+</head>
+
+<body>
+    <div>
+
+        <h1>Distributed Test Editor</h1>
+        <hr>
+
+        <p>
+            <i>Decentralized Real-Time Collaborative Editor using CRDT</i>
+        </p>
+
+        <textarea id="textArea1" placeholder="start typing..."></textarea>
+        <br>
+        <br>
+        <div>
+            
+    </div>
+        </div>
+</body>
+
+</html>
