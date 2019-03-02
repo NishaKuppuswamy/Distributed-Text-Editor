@@ -7,26 +7,67 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="icon" type="image/png" href="https://ipfs.io/images/favicon.png">
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            var prev;
-            $('#textArea1').on("change paste keyup", function () {
-                //var prev = $(this).data('prev');
-                var current = $(this).val();
-                console.log("Prev value " + prev);
-                console.log("New value " + current);
-                prev = current;
-                var pos = $("#textArea1").prop('selectionStart');
-                console.log(pos);
-                console.log(current[pos - 1]);
-                $.get("/updateCrdt", { val: current[pos - 1], index: pos-1 }, function (data) { });
-            });
-
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@0.3.20/dist/peer.min.js"></script>
+    <script src="bundle.js"></script>
+    <script type="text/javascript">
+       $(document).ready(function () {
+           console.log("doc ready");
+        createController();
+           var simplemde = new SimpleMDE({
+            element: $("textarea#id1")[0],
+            initialValue: "hi",
         });
+        simplemde.codemirror.on("change", function(changeObj, obj2){
+            //$("#regTitle").html(simplemde.value());
+            LogData(obj2.from.ch, obj2.text, obj2.origin);
+        });
+    });
+        // var peer1 = new Peer({key: 'api'});
+        // peer1.on('open', function(id){
+        //     console.log('peer id: '+id);
+        //     $.get("/createSiteId", { siteId: id }, function (data) { });
+                
+        // });
+        // var peer2 = new Peer({key: 'api'}); 
+        // var conn = peer1.connect('2');
+        //     conn.on('open', function(){
+        //     conn.send('hi!');
+        //     });
+        //     peer2.on('connection', function(conn) {
+        //         conn.on('data', function(data){
+        //             // Will print 'hi!'
+        //             console.log(data);
+        //         });
+        //         });
+        // $(document).ready(function () {
+        //     var prev;
+        //     $('#textArea1').on("change paste keyup", function () {
+        //         //var prev = $(this).data('prev');
+        //         var current = $(this).val();
+        //         console.log("Prev value " + prev);
+        //         console.log("New value " + current);
+        //         prev = current;
+        //         var pos = $("#textArea1").prop('selectionStart');
+        //         console.log(pos);
+        //         console.log(current[pos - 1]);
+        //         $.get("/updateCrdt", { val: current[pos - 1], index: pos-1 }, function (data) { });
+        //     });
+
+        // });
     </script>
     <title>Distributed Editor</title>
     <style>
+        body { padding-top: 70px; }
+
+        #editor {
+        width:100%;
+        height:480px;
+        display:block;
+        box-sizing: border-box;
+        }
 
         body {
             background: #D1F0B2;
@@ -59,12 +100,37 @@
 
         <h1>Distributed Test Editor</h1>
         <hr>
-
+        <div class="hide" id="conclave">
+                <div class="text-wrapper">
+                    <div class="editor">
+                        <div class="header">
+        <textarea id = "id1"></textarea></div></div></div></div>
         <p>
             <i>Decentralized Real-Time Collaborative Editor using CRDT</i>
         </p>
+        <!--
+        <div id="editor"></div>  
+        --> 
+        <!--
+        <script src="http://ace.c9.io/build/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+            -->
+        <script>
+        
+        // var editor = ace.edit("editor");
+        // editor.setTheme("ace/theme/chrome");
+        
+        
+            // editor.getSession().on('change', function(e){
+            //     var pos = editor.selection.getCursor();
+            //     var index = editor.getSession().getDocument().positionToIndex(pos);
+            //     console.log(index+" at: "+e.lines[0]);
+            //     //e.action = 'insert';
+            //     $.get("/updateCrdt", { val: e.lines[0], index: index, action:e.action }, function (data) { });
+                
+            // });
+        </script>
 
-        <textarea id="textArea1" placeholder="start typing..."></textarea>
+        <!-- <textarea id="textArea1" placeholder="start typing..."></textarea> -->
         <br>
         <br>
         <div>

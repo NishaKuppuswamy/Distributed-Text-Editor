@@ -1,27 +1,28 @@
-const TreeMap = require("treemap-js");
-var ArrayList = require('arraylist-js')
+//const TreeMap = require("treemap-js");
+//var ArrayList = require('arraylist-js')
+//var LSEQArray = require('lseqarray');
+let crdtLinear = require('./crdtLinear');
+let CRDT = crdtLinear.CRDT;
 
 class CrdtController {
-    constructor() {
-        this.crdtList = new ArrayList();
+    constructor(siteID=1) {
+        this.siteID = siteID;
+        this.crdt = new CRDT();
     }
 
-    processCrdt(crdt) {
-        var size = this.crdtList.size();
-        console.log("inserting at pos"+crdt.pos+":val:"+crdt.val);
-        if (size == 0 || size<crdt.pos) {
-            this.crdtList.add(crdt);
-        }
-       
-            //console.log("here: " + this.crdtMap.get(crdt.pos).val);
+    processCrdt(pos, value, action) {
+        if(action == "insert")
+        this.crdt.handleLocalInsert(value, pos);
+        if(action == "remove")
+        this.crdt.handleLocalDelete(value);
     }
 
     listCrdtMap() {
         console.log("listcrdt");
         this.crdtList.map(function (crdt) {
-            console.log(codt.pos+":"+ crdt.val);
+            console.log(codt.pos + ":" + crdt.val);
         })
-   }
+    }
 }
 
 module.exports = {
