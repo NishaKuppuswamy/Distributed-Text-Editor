@@ -15,48 +15,67 @@
     <script type="text/javascript">
        $(document).ready(function () {
            console.log("doc ready");
-        createController();
-           var simplemde = new SimpleMDE({
+           var incomingPeers = [];
+           var targetId = 0;
+           const params = new Map(location.search.slice(1).split('&').map(kv => kv.split('=')));
+           if(params.has('id')){
+            targetId = params.get('id');
+           }
+
+        var simplemde = new SimpleMDE({
             element: $("textarea#id1")[0],
-            initialValue: "hi",
+            initialValue: "",
         });
         simplemde.codemirror.on("change", function(changeObj, obj2){
             //$("#regTitle").html(simplemde.value());
-            LogData(obj2.from.ch, obj2.text, obj2.origin);
+            LogData(obj2.from.ch, obj2.text[0], obj2.origin);
+        });
+
+        var conn;
+        var peer = new Peer({key: 'api'});
+        peer.on('open', function(id){
+            console.log('peer id: '+peer.id);
+            createController(peer.id); 
+            if(targetId != 0){
+                var c = peer.connect(targetId);
+					c.on('open', function(){
+                        connect(c);
+                        conn.send("Data:"+peer.id);
+					});
+            } 
+        });
+        peer.on('connection', connect);   
+        function connect(c){
+            conn = c
+            conn.on('data',function(data){
+                console.log(data);
+                if(data.startsWith("Data")){
+                    var incomingPeerId = data.split(":")[1];
+                    var text = fetchCrdt();
+                    console.log(text);
+                    conn.send("Text:"+text);
+                }
+                if(data.startsWith("Text")){
+                    var text = data.split(":")[1];
+                    //$("#id1").val(text);        
+                    simplemde.value(text);  
+                }
+            });
+            conn.on('close', disconnect);
+        }
+
+        function disconnect(){
+            if (conn.peer) {
+                conn.peer = null;
+                conn.close();
+            }
+        }
+        
+        $('#share').on("click", function () {
+            getURL();
         });
     });
-        // var peer1 = new Peer({key: 'api'});
-        // peer1.on('open', function(id){
-        //     console.log('peer id: '+id);
-        //     $.get("/createSiteId", { siteId: id }, function (data) { });
-                
-        // });
-        // var peer2 = new Peer({key: 'api'}); 
-        // var conn = peer1.connect('2');
-        //     conn.on('open', function(){
-        //     conn.send('hi!');
-        //     });
-        //     peer2.on('connection', function(conn) {
-        //         conn.on('data', function(data){
-        //             // Will print 'hi!'
-        //             console.log(data);
-        //         });
-        //         });
-        // $(document).ready(function () {
-        //     var prev;
-        //     $('#textArea1').on("change paste keyup", function () {
-        //         //var prev = $(this).data('prev');
-        //         var current = $(this).val();
-        //         console.log("Prev value " + prev);
-        //         console.log("New value " + current);
-        //         prev = current;
-        //         var pos = $("#textArea1").prop('selectionStart');
-        //         console.log(pos);
-        //         console.log(current[pos - 1]);
-        //         $.get("/updateCrdt", { val: current[pos - 1], index: pos-1 }, function (data) { });
-        //     });
-
-        // });
+        
     </script>
     <title>Distributed Editor</title>
     <style>
@@ -103,7 +122,8 @@
         <div class="hide" id="conclave">
                 <div class="text-wrapper">
                     <div class="editor">
-                        <div class="header">
+                        <div class="header"><button id="share">Share URL</button>
+                            <div id="url"></div>
         <textarea id = "id1"></textarea></div></div></div></div>
         <p>
             <i>Decentralized Real-Time Collaborative Editor using CRDT</i>

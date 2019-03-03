@@ -11,19 +11,15 @@ var ExpressPeerServer = require('peer').ExpressPeerServer;
 app.use(express.static(__dirname)); 
 
 app.get('/', function (req, res) {
-    res.render('index.html', { siteID: 'Hello World!' });
+    res.sendFile('/index.html', { root: __dirname })
     //crdtController = new CrdtController();
 });
 
-app.get('/createSiteId', function (req, res) {
-    //crdtController.siteID = req.query.siteId;
-});
-
-app.get('/updateCrdt', function (req, res) {
+app.get('/shared', function (req, res) {
     // console.log(req.query.val);
     //let crdt1 = new CRDT(req.query.index, req.query.val);
-    console.log(req.query.index);
-    //crdtController.processCrdt(req.query.index, req.query.val, req.query.action);
+    //console.log(req.query.id);
+    res.sendFile('/index.html', { root: __dirname })
     
 });
 
