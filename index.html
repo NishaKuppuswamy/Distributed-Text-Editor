@@ -20,9 +20,13 @@
            const params = new Map(location.search.slice(1).split('&').map(kv => kv.split('=')));
            if(params.has('id')){
             targetId = params.get('id');
+                if(targetId!= undefined){
+                    $("#share").hide();
+                }
            }
 
         var simplemde = new SimpleMDE({
+            toolbar : false,
             element: $("textarea#id1")[0],
             initialValue: "",
         });
@@ -40,6 +44,7 @@
                 var c = peer.connect(targetId);
 					c.on('open', function(){
                         connect(c);
+                        //Sending my peer id to the connecting id
                         conn.send("Data:"+peer.id);
 					});
             } 
@@ -117,7 +122,7 @@
 <body>
     <div>
 
-        <h1>Distributed Test Editor</h1>
+        <h1>Distributed Text Editor</h1>
         <hr>
         <div class="hide" id="conclave">
                 <div class="text-wrapper">
