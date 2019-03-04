@@ -7,7 +7,7 @@ class Version {
     this.unHandled = [];
   }
 
-  update(version) {
+  updateVersion(version) {
     const incCounter = version.counter;
     // If incoming counter is less than the current counter add to unHandled array
     if (incCounter <= this.counter) {

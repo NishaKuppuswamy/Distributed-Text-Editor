@@ -101,12 +101,15 @@ let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
 let char = require('./char');
 let Char = char.Char;
+let version = require('./versionList');
+let VersionList = version.VersionList;
 
 
 class CRDT {
   constructor(/*controller,*/siteID, base=32, boundary=10, strategy='random', mult=2) {
     //this.controller = controller;
-    //this.vector = controller.vector;
+    //this.vector = controller.vector;    
+    this.list = new VersionList(siteID);
     this.struct = [];
     //this.siteId = 1;//controller.siteID;
     this.siteId = siteID;
@@ -119,8 +122,9 @@ class CRDT {
   }
 
   handleLocalInsert(val, index) {
-   // this.vector.increment();
-    console.log(val);      
+    this.list.incCounter();
+    console.log(this.list);
+    //console.log(val);      
     const char = this.generateChar(val, index);
     this.insertChar(index, char);
     this.insertText(char.value, index);
@@ -142,14 +146,11 @@ class CRDT {
 
   insertChar(index, char) {      
     this.struct.splice(index, 0, char);
-    console.log("Inserting char");
-    console.log(this.struct);  
-    console.log(this.text); 
   }
 
   handleLocalDelete(idx) {
-    //this.vector.increment();
-
+    this.list.incCounter();
+    console.log(this.list);
     const char = this.struct.splice(idx, 1)[0];
     this.deleteText(idx);
 
@@ -310,6 +311,9 @@ class CRDT {
       val = "\n";
     }
     this.text = this.text.slice(0, index) + val + this.text.slice(index);
+    console.log("Inserting char");
+    console.log(this.struct);  
+    console.log(this.text); 
   }
 
   deleteText(index) {
@@ -320,7 +324,7 @@ class CRDT {
 module.exports = {
     CRDT: CRDT
 }
-},{"./char":2,"./identifier":5}],5:[function(require,module,exports){
+},{"./char":2,"./identifier":5,"./versionList":7}],5:[function(require,module,exports){
 class Identifier {
   constructor(digit, siteId) {
     this.digit = digit; 
@@ -349,4 +353,102 @@ class Identifier {
 module.exports = {
     Identifier: Identifier
 }
-},{}]},{},[3]);
+},{}],6:[function(require,module,exports){
+class Version {
+  constructor(siteId) {
+    this.siteId = siteId;
+    // Operation count for that particular siteID
+    this.counter = 0;
+    //Operation not performed yet are stored in unHandled
+    this.unHandled = [];
+  }
+
+  updateVersion(version) {
+    const incCounter = version.counter;
+    // If incoming counter is less than the current counter add to unHandled array
+    if (incCounter <= this.counter) {
+      const idx = this.unHandled.indexOf(incCounter);
+      this.unHandled.splice(idx, 1);
+    } 
+    //If incoming counter is current counter+1 then it is the next operation
+    else if (incCounter === this.counter + 1) {
+      this.counter = this.counter + 1;
+    } 
+    // If incoming counter is greater than current counter+1 
+    //add all the missing operation counter to the unHandled array
+    else {
+      for (let i = this.counter + 1; i < incCounter; i++) {
+        this.unHandled.push(i);
+      }
+      this.counter = incCounter;
+    }
+  }
+}
+
+module.exports = {
+    Version: Version
+}
+},{}],7:[function(require,module,exports){
+let ver = require('./version');
+let Version = ver.Version;
+
+//List of versions for each siteID to maintain consistency and 
+//avoid duplicate operations
+class VersionList {
+   constructor(siteId) {
+    this.versions = [];
+    this.localVersion = new Version(siteId);
+    this.versions.push(this.localVersion);
+  }
+
+   //Increment counter of local version for each operation
+   incCounter() {
+    this.localVersion.counter++;
+  }
+  //Updating the versionlist on receiving versions from other sites 
+  updateVersionList(inVersion) {
+    const exists = this.versions.find(version => inVersion.siteId === version.siteId);
+    //If the site ID of the received version doesnot already exist create a new version
+    //and update the new version
+    if (!exists) {
+      const newVersion = new Version(inVersion.siteId);
+      newVersion.updateVersion(inVersion);
+      this.versions.push(newVersion);
+    } else {
+        exists.updateVersion(inVersion);
+    }
+  } 
+
+  // Validating if the incoming operation has already been applied
+  applied(inVersion) {
+    const localInVersion = this.getVersionFromList(inVersion);
+    const applied = !!localInVersion;
+    // If the version itself doesnt exist in the list return false
+    if (!applied){
+        return false;
+    }
+    //If version exists check for the counter and if it has been already handled
+    const isLower = inVersion.counter <= localInVersion.counter;
+    const isUnHandled = localInVersion.unHandled.includes(inVersion.counter);
+    return isLower && !isUnHandled;
+  }
+
+  //Check if version exists in the list and return it
+  getVersionFromList(inVersion) {
+    return this.versions.find(version => version.siteId === inVersion.siteId);
+  }
+
+  //Returns the siteId and counter of local version
+  getLocalVersion() {
+    return {
+      siteId: this.localVersion.siteId,
+      counter: this.localVersion.counter
+    };
+  }
+}
+
+module.exports = {
+    VersionList: VersionList
+}
+
+},{"./version":6}]},{},[3]);

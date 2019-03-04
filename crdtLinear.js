@@ -2,12 +2,15 @@ let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
 let char = require('./char');
 let Char = char.Char;
+let version = require('./versionList');
+let VersionList = version.VersionList;
 
 
 class CRDT {
   constructor(/*controller,*/siteID, base=32, boundary=10, strategy='random', mult=2) {
     //this.controller = controller;
-    //this.vector = controller.vector;
+    //this.vector = controller.vector;    
+    this.list = new VersionList(siteID);
     this.struct = [];
     //this.siteId = 1;//controller.siteID;
     this.siteId = siteID;
@@ -20,8 +23,9 @@ class CRDT {
   }
 
   handleLocalInsert(val, index) {
-   // this.vector.increment();
-    console.log(val);      
+    this.list.incCounter();
+    console.log(this.list);
+    //console.log(val);      
     const char = this.generateChar(val, index);
     this.insertChar(index, char);
     this.insertText(char.value, index);
@@ -46,11 +50,10 @@ class CRDT {
   }
 
   handleLocalDelete(idx) {
-    //this.vector.increment();
-
+    this.list.incCounter();
+    console.log(this.list);
     const char = this.struct.splice(idx, 1)[0];
     this.deleteText(idx);
-
     //this.controller.broadcastDeletion(char);
   }
 
