@@ -17,12 +17,12 @@ class CrdtController {
         this.crdt.handleLocalDelete(value);
     }
 
-    listCrdtMap() {
+    /*listCrdtMap() {
         console.log("listcrdt");
         this.crdtList.map(function (crdt) {
             console.log(codt.pos + ":" + crdt.val);
         })
-    }
+    }*/
 }
 
 module.exports = {
