@@ -15,7 +15,7 @@
     <script type="text/javascript">
        $(document).ready(function () {
            console.log("doc ready");
-           var incomingPeers = [];
+           var connections = [];
            var targetId = 0;
            const params = new Map(location.search.slice(1).split('&').map(kv => kv.split('=')));
            if(params.has('id')){
@@ -56,14 +56,39 @@
                 console.log(data);
                 if(data.startsWith("Data")){
                     var incomingPeerId = data.split(":")[1];
-                    var text = fetchCrdt();
+                    //var text = fetchCrdt();
+                    // Adding the connecting peer to my list of connections
+                    if(!connections.includes(incomingPeerId)){
+                        connections.push(incomingPeerId);
+                        console.log("List of connections");
+                        console.log(connections);
+                    }
+                    //Sending my current existing objects to the connecting peer id
+                    //(peerid,connections list, struct, version)
+                    var crdt = fetchCrdt();
+                    crdt = JSON.stringify(crdt);
+                    conn.send("Initial crdt:"+crdt);
+                    /*var text = fetchCrdt();
                     console.log(text);
-                    conn.send("Text:"+text);
+                    conn.send("Text:"+text);*/
                 }
-                if(data.startsWith("Text")){
+                /*if(data.startsWith("Text")){
                     var text = data.split(":")[1];
                     //$("#id1").val(text);        
                     simplemde.value(text);  
+                }*/
+                if(data.startsWith("Initial crdt")){
+                    var crdt = data.replace("Initial crdt:",""); 
+                    crdt = JSON.parse(crdt); 
+                    if(crdt.struct!=undefined){
+                        console.log("Receiving the initial struct");
+                        console.log(crdt.struct);
+                        //simplemde.value(crdt.generateText()); 
+                    }
+                    else{
+                        console.log("Struct is undefined");
+                        console.log(crdt);
+                    }                    
                 }
             });
             conn.on('close', disconnect);

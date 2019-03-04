@@ -18,12 +18,12 @@ class CrdtController {
         this.crdt.handleLocalDelete(value);
     }
 
-    listCrdtMap() {
+    /*listCrdtMap() {
         console.log("listcrdt");
         this.crdtList.map(function (crdt) {
             console.log(codt.pos + ":" + crdt.val);
         })
-    }
+    }*/
 }
 
 module.exports = {
@@ -85,11 +85,11 @@ window.LogData =function(pos, value, action){
   if(action == "+input")
   crdtController.crdt.handleLocalInsert(value, pos);
   if(action == "+delete")
-  crdtController.crdt.handleLocalDelete(value);
+  crdtController.crdt.handleLocalDelete(pos);
 };
 
-window.fetchCrdt = function(){
-return crdtController.crdt.text;
+window.fetchCrdt =function(){
+  return crdtController.crdt;
 };
 
 },{"./CrdtController":1}],4:[function(require,module,exports){
@@ -130,6 +130,10 @@ class CRDT {
     this.insertText(char.value, index);
 
     //this.controller.insertIntoEditor(char.value, index, char.siteId);
+  }
+
+  generateText() {
+    return this.struct.map(char => char.value).join('');
   }
 
   insertChar(index, char) {
@@ -279,24 +283,7 @@ class CRDT {
       }
     }
   }
-/*
-Math.random gives you a range that is inclusive of the min and exclusive of the max
-so have to add and subtract ones to get them all into that format
-if max - min <= boundary, the boundary doesn't matter
-    newDigit > min, newDigit < max
-    ie (min+1...max)
-    so, min = min + 1
-if max - min > boundary and the boundary is negative
-    min = max - boundary
-    newDigit >= min, newDigit < max
-    ie (min...max)
-if max - min > boundary and the boundary is positive
-    max = min + boundary
-    newDigit > min, newDigit <= max
-    ie (min+1...max+1)
-    so, min = min + 1 and max = max + 1
-now all are (min...max)
-*/
+
   generateIdBetween(min, max, boundaryStrategy) {
     if ((max - min) < this.boundary) {
       min = min + 1;
@@ -318,10 +305,6 @@ now all are (min...max)
 
   deleteText(index) {
     this.text = this.text.slice(0, index) + this.text.slice(index + 1);
-  }
-
-  populateText() {
-    this.text = this.struct.map(char => char.value).join('');
   }
 }
 

@@ -19,6 +19,6 @@ window.LogData =function(pos, value, action){
   crdtController.crdt.handleLocalDelete(pos);
 };
 
-window.fetchCrdt = function(){
-return crdtController.crdt.text;
+window.fetchCrdt =function(){
+  return crdtController.crdt;
 };
