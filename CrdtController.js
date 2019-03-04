@@ -5,9 +5,9 @@ let crdtLinear = require('./crdtLinear');
 let CRDT = crdtLinear.CRDT;
 
 class CrdtController {
-    constructor(siteID=1) {
+    constructor(siteID) {
         this.siteID = siteID;
-        this.crdt = new CRDT();
+        this.crdt = new CRDT(siteID);
     }
 
     processCrdt(pos, value, action) {

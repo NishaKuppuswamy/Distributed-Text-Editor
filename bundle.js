@@ -6,9 +6,9 @@ let crdtLinear = require('./crdtLinear');
 let CRDT = crdtLinear.CRDT;
 
 class CrdtController {
-    constructor(siteID=1) {
+    constructor(siteID) {
         this.siteID = siteID;
-        this.crdt = new CRDT();
+        this.crdt = new CRDT(siteID);
     }
 
     processCrdt(pos, value, action) {
@@ -104,11 +104,12 @@ let Char = char.Char;
 
 
 class CRDT {
-  constructor(/*controller,*/ base=32, boundary=10, strategy='random', mult=2) {
+  constructor(/*controller,*/siteID, base=32, boundary=10, strategy='random', mult=2) {
     //this.controller = controller;
     //this.vector = controller.vector;
     this.struct = [];
-    this.siteId = 1;//controller.siteID;
+    //this.siteId = 1;//controller.siteID;
+    this.siteId = siteID;
     this.text = "";
     this.base = base;
     this.boundary = boundary;
