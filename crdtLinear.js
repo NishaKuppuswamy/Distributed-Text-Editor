@@ -41,10 +41,7 @@ class CRDT {
     return this.struct.map(char => char.value).join('');
   }
 
-  insertChar(index, char) {
-    console.log("Inserting char");
-    console.log(this.struct);  
-    console.log(this.text);   
+  insertChar(index, char) {      
     this.struct.splice(index, 0, char);
   }
 
@@ -209,9 +206,11 @@ class CRDT {
   insertText(val, index) {
     if(val.length == 0) {
       val = "\n";
-      //this.text = this.text.slice(index) + val +this.text.slice(0, index);
     }
     this.text = this.text.slice(0, index) + val + this.text.slice(index);
+    console.log("Inserting char");
+    console.log(this.struct);  
+    console.log(this.text); 
   }
 
   deleteText(index) {

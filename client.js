@@ -9,7 +9,6 @@ window.getURL =function(){
 window.createController =function(siteID){
   console.log("created controller");
   crdtController = new CrdtController(siteID);
-  //crdtController.siteID = siteID;
 };
 
 window.LogData =function(pos, value, action){
@@ -23,6 +22,7 @@ window.fetchCrdt =function(){
   return crdtController.crdt;
 };
 
-window.syncStruct =function(struct){
+window.syncStruct =function(struct,text){
   crdtController.crdt.struct = struct;
+  crdtController.crdt.text = text;
 };

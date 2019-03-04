@@ -95,7 +95,7 @@
                         console.log("Receiving the initial struct");
                         console.log(crdt.struct);
                         //Assign it to my struct
-                        syncStruct(crdt.struct);
+                        syncStruct(crdt.struct,crdt.text);
                         //Assign the text to my editor
                         simplemde.value(crdt.text); 
                     }
