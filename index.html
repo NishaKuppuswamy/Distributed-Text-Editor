@@ -56,39 +56,38 @@
                 console.log(data);
                 if(data.startsWith("Data")){
                     var incomingPeerId = data.split(":")[1];
-                    //var text = fetchCrdt();
                     // Adding the connecting peer to my list of connections
                     if(!connections.includes(incomingPeerId)){
                         connections.push(incomingPeerId);
-                        console.log("List of connections");
                         console.log(connections);
                     }
                     //Sending my current existing objects to the connecting peer id
                     //(peerid,connections list, struct, version)
                     var crdt = fetchCrdt();
                     crdt = JSON.stringify(crdt);
+                    connJSON = JSON.stringify(connections);
                     conn.send("Initial crdt:"+crdt);
-                    /*var text = fetchCrdt();
-                    console.log(text);
-                    conn.send("Text:"+text);*/
+                    conn.send("Connection list:"+connJSON);
                 }
-                /*if(data.startsWith("Text")){
-                    var text = data.split(":")[1];
-                    //$("#id1").val(text);        
-                    simplemde.value(text);  
-                }*/
                 if(data.startsWith("Initial crdt")){
                     var crdt = data.replace("Initial crdt:",""); 
                     crdt = JSON.parse(crdt); 
                     if(crdt.struct!=undefined){
                         console.log("Receiving the initial struct");
                         console.log(crdt.struct);
-                        //simplemde.value(crdt.generateText()); 
+                        //Assign it to my struct
+                        syncStruct(crdt.struct);
+                        //Assign the text to my editor
+                        simplemde.value(crdt.text); 
                     }
                     else{
                         console.log("Struct is undefined");
                         console.log(crdt);
                     }                    
+                }
+                if(data.startsWith("Connection list")){
+                    var connect = data.replace("Connection list:",""); 
+                    connect = JSON.parse(connect);                 
                 }
             });
             conn.on('close', disconnect);

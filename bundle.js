@@ -92,6 +92,10 @@ window.fetchCrdt =function(){
   return crdtController.crdt;
 };
 
+window.syncStruct =function(struct){
+  crdtController.crdt.struct = struct;
+};
+
 },{"./CrdtController":1}],4:[function(require,module,exports){
 let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
@@ -115,7 +119,7 @@ class CRDT {
 
   handleLocalInsert(val, index) {
    // this.vector.increment();
-    console.log(val);
+    console.log(val);      
     const char = this.generateChar(val, index);
     this.insertChar(index, char);
     this.insertText(char.value, index);
@@ -125,7 +129,6 @@ class CRDT {
 
   handleRemoteInsert(char) {
     const index = this.findInsertIndex(char);
-
     this.insertChar(index, char);
     this.insertText(char.value, index);
 
@@ -137,6 +140,9 @@ class CRDT {
   }
 
   insertChar(index, char) {
+    console.log("Inserting char");
+    console.log(this.struct);  
+    console.log(this.text);   
     this.struct.splice(index, 0, char);
   }
 
@@ -299,7 +305,10 @@ class CRDT {
   }
 
   insertText(val, index) {
-    if(val.length == 0) val = "\n";
+    if(val.length == 0) {
+      val = "\n";
+      //this.text = this.text.slice(index) + val +this.text.slice(0, index);
+    }
     this.text = this.text.slice(0, index) + val + this.text.slice(index);
   }
 

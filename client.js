@@ -22,3 +22,7 @@ window.LogData =function(pos, value, action){
 window.fetchCrdt =function(){
   return crdtController.crdt;
 };
+
+window.syncStruct =function(struct){
+  crdtController.crdt.struct = struct;
+};
