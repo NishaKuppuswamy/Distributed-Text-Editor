@@ -80,10 +80,10 @@ window.createController =function(siteID){
   crdtController = new CrdtController(siteID);
 };
 
-window.LogData =function(pos, value, action, connections){
-  if(action == "+input")
-  crdtController.crdt.handleLocalInsert(value, pos, connections);
-  if(action == "+delete")
+window.LogData =function(pos, value, action){
+  if(action == "insert")
+  crdtController.crdt.handleLocalInsert(value, pos);
+  if(action == "remove")
   crdtController.crdt.handleLocalDelete(pos);
 };
 
@@ -91,7 +91,7 @@ window.fetchCrdt =function(){
   return crdtController.crdt;
 };
 
-window.syncStruct =function(struct,text){
+window.syncStruct =function(struct, text){
   crdtController.crdt.struct = struct;
   crdtController.crdt.text = text;
 };
@@ -180,8 +180,10 @@ class CRDT {
     return this.struct.map(char => char.value).join('');
   }
 
-  insertChar(index, char) {      
+  insertChar(index, char) {
+    console.log("Inserting char");   
     this.struct.splice(index, 0, char);
+    console.log(this.struct);
   }
 
   handleLocalDelete(idx) {
@@ -345,9 +347,7 @@ class CRDT {
       val = "\n";
     }
     this.text = this.text.slice(0, index) + val + this.text.slice(index);
-    console.log("Inserting char");
-    console.log(this.struct);  
-    console.log(this.text); 
+    console.log(this.text);
   }
 
   deleteText(index) {

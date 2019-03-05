@@ -78,8 +78,10 @@ class CRDT {
     return this.struct.map(char => char.value).join('');
   }
 
-  insertChar(index, char) {      
+  insertChar(index, char) {
+    console.log("Inserting char");   
     this.struct.splice(index, 0, char);
+    console.log(this.struct);
   }
 
   handleLocalDelete(idx) {
@@ -243,9 +245,7 @@ class CRDT {
       val = "\n";
     }
     this.text = this.text.slice(0, index) + val + this.text.slice(index);
-    console.log("Inserting char");
-    console.log(this.struct);  
-    console.log(this.text); 
+    console.log(this.text);
   }
 
   deleteText(index) {

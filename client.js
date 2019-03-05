@@ -22,6 +22,10 @@ window.fetchCrdt =function(){
   return crdtController.crdt;
 };
 
+window.fetchVersion =function(){
+  return crdtController.crdt;
+};
+
 window.syncStruct =function(struct,text){
   crdtController.crdt.struct = struct;
   crdtController.crdt.text = text;
