@@ -30,3 +30,7 @@ window.syncStruct =function(struct){
 window.LogRemoteInsertData =function(char, siteId){
   crdtController.crdt.handleRemoteInsert(char);
 };
+
+window.SendConnections = function(char, connection) {
+  crdtController.crdt.broadcastNew(char, connection);
+};

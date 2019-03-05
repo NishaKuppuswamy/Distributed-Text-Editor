@@ -65,6 +65,7 @@
 					c.on('open', function(){
                         connect(c);
                         //Sending my peer id to the connecting id
+                        connections.push({"id": targetId, "conn":conn, "target": peer.id});
                         conn.send("Data:"+peer.id);
 					});
             } 
@@ -79,7 +80,7 @@
                     // Adding the connecting peer to my list of connections
                     if(connections != undefined || !connections.id.includes(incomingPeerId)){
                         console.log("log incom id "+incomingPeerId);
-                        connections.push({"id":incomingPeerId, "conn":conn});
+                        connections.push({"id":incomingPeerId, "conn":conn, "target": targetId});
                         console.log(connections);
                     }
                     //Sending my current existing objects to the connecting peer id
@@ -115,8 +116,20 @@
                 		console.log("HTML remote "+JSON.parse(connect).Insert.value);
                 		LogRemoteInsertData(JSON.parse(connect).Insert, connect);
                 }
+                if(data.startsWith("GetConnections")) {
+                		var received = data.replace("GetConnections:","");
+                		var i = received.id;
+                		var character = received.char;
+                		conn.send("SendConnections:"+{"id":i, "char":character, "conn":connections});
+                }
+                if(data.startsWith("SendConnections")) {
+                		var insertData = data.replace("SendConnections:","");
+                		//console.log("GOT AT "+insertData.id+" "+insertData.conn);
+                		if(peer.id == insertData.id)
+                			SendConnections(insertData.char, insertData.connections);
+                }
             });
-            conn.on('close', disconnect);
+            //conn.on('close', disconnect);
         }
 
         function disconnect(){
