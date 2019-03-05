@@ -80,9 +80,9 @@ window.createController =function(siteID){
   crdtController = new CrdtController(siteID);
 };
 
-window.LogData =function(pos, value, action){
+window.LogData =function(pos, value, action, connections){
   if(action == "insert")
-  crdtController.crdt.handleLocalInsert(value, pos);
+  crdtController.crdt.handleLocalInsert(value, pos, connections);
   if(action == "remove")
   crdtController.crdt.handleLocalDelete(pos);
 };
@@ -91,7 +91,11 @@ window.fetchCrdt =function(){
   return crdtController.crdt;
 };
 
-window.syncStruct =function(struct, text){
+window.fetchVersion =function(){
+  return crdtController.crdt;
+};
+
+window.syncStruct =function(struct,text){
   crdtController.crdt.struct = struct;
   crdtController.crdt.text = text;
 };

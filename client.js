@@ -12,9 +12,9 @@ window.createController =function(siteID){
 };
 
 window.LogData =function(pos, value, action, connections){
-  if(action == "+input")
+  if(action == "insert")
   crdtController.crdt.handleLocalInsert(value, pos, connections);
-  if(action == "+delete")
+  if(action == "remove")
   crdtController.crdt.handleLocalDelete(pos);
 };
 

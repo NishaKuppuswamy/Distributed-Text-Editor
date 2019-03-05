@@ -29,8 +29,7 @@
                 }
            }
         var editor = ace.edit("editor");
-        editor.setTheme("ace/theme/chrome");
-        
+        editor.setTheme("ace/theme/chrome");        
         editor.getSession().on('change', function(e){
             if(canChange){
                  var pos = editor.selection.getCursor();
@@ -74,7 +73,7 @@
                     //connJSON = JSON.stringify(connections);
                     conn.send("Initial crdt:"+crdt);
                     //conn.send("NewlineArr:"+JSON.stringify(newLineArr));
-                    conn.send("Connection list:"+connJSON);
+                    //conn.send("Connection list:"+connJSON);
                 }
                 if(data.startsWith("Initial crdt")){
                     var crdt = data.replace("Initial crdt:",""); 
