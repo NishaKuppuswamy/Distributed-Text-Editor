@@ -41,10 +41,9 @@ class CRDT {
   }
 
   insertChar(index, char) {
-    console.log("Inserting char");
-    console.log(this.struct);  
-    console.log(this.text);   
+    console.log("Inserting char");   
     this.struct.splice(index, 0, char);
+    console.log(this.struct);
   }
 
   handleLocalDelete(idx) {
@@ -211,6 +210,7 @@ class CRDT {
       //this.text = this.text.slice(index) + val +this.text.slice(0, index);
     }
     this.text = this.text.slice(0, index) + val + this.text.slice(index);
+    console.log(this.text);
   }
 
   deleteText(index) {

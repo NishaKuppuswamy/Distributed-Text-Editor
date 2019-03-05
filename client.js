@@ -13,9 +13,9 @@ window.createController =function(siteID){
 };
 
 window.LogData =function(pos, value, action){
-  if(action == "+input")
+  if(action == "insert")
   crdtController.crdt.handleLocalInsert(value, pos);
-  if(action == "+delete")
+  if(action == "remove")
   crdtController.crdt.handleLocalDelete(pos);
 };
 
@@ -23,6 +23,7 @@ window.fetchCrdt =function(){
   return crdtController.crdt;
 };
 
-window.syncStruct =function(struct){
+window.syncStruct =function(struct, text){
   crdtController.crdt.struct = struct;
+  crdtController.crdt.text = text;
 };

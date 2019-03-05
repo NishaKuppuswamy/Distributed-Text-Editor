@@ -7,8 +7,9 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="icon" type="image/png" href="https://ipfs.io/images/favicon.png">
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
-    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+   <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script> -->
+    <script src="http://ace.c9.io/build/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/peerjs@0.3.20/dist/peer.min.js"></script>
     <script src="bundle.js"></script>
@@ -18,6 +19,7 @@
            var newLineArr = [];
            var connections = [];
            var targetId = 0;
+           var canChange = true;
            const params = new Map(location.search.slice(1).split('&').map(kv => kv.split('=')));
            if(params.has('id')){
             targetId = params.get('id');
@@ -25,33 +27,15 @@
                     $("#share").hide();
                 }
            }
-
-        var simplemde = new SimpleMDE({
-            toolbar : false,
-            element: $("textarea#id1")[0],
-            initialValue: "",
-        });
-        simplemde.codemirror.on("change", function(changeObj, obj2){
-            //$("#regTitle").html(simplemde.value());
-            var cm = simplemde.codemirror;
-            var position = obj2.from.ch;
-            if(obj2.text[0] == "")
-            {
-                if(newLineArr.length == 0){
-                    newLineArr.push(obj2.from.ch);
-                }
-                else{
-                    //var ind = newLineArr.length-1;
-                    var ind = newLineArr[newLineArr.length-1];
-                    position = ind + obj2.from.ch+1;
-                    newLineArr.push(position);
-                }
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/chrome");
+        
+        editor.getSession().on('change', function(e){
+            if(canChange){
+                 var pos = editor.selection.getCursor();
+                 var index = editor.getSession().getDocument().positionToIndex(pos);
+                 LogData(index, e.lines[0], e.action);
             }
-            else if(newLineArr.length > 0){
-                var ind = newLineArr[newLineArr.length-1];
-                position = ind + position+1;
-            }
-            LogData(position, obj2.text[0], obj2.origin);
         });
 
         var conn;
@@ -86,6 +70,7 @@
                     crdt = JSON.stringify(crdt);
                     connJSON = JSON.stringify(connections);
                     conn.send("Initial crdt:"+crdt);
+                    //conn.send("NewlineArr:"+JSON.stringify(newLineArr));
                     conn.send("Connection list:"+connJSON);
                 }
                 if(data.startsWith("Initial crdt")){
@@ -95,9 +80,14 @@
                         console.log("Receiving the initial struct");
                         console.log(crdt.struct);
                         //Assign it to my struct
-                        syncStruct(crdt.struct);
+                        syncStruct(crdt.struct, crdt.text);
                         //Assign the text to my editor
-                        simplemde.value(crdt.text); 
+                        //simplemde.value(crdt.text); 
+                        console.log("recvd text: "+crdt.text);
+                        canChange = false;
+                        var document = editor.getSession().getDocument(); 
+                        document.setValue(crdt.text);
+                        canChange = true;
                     }
                     else{
                         console.log("Struct is undefined");
@@ -172,13 +162,13 @@
                     <div class="editor">
                         <div class="header"><button id="share">Share URL</button>
                             <div id="url"></div>
-        <textarea id = "id1"></textarea></div></div></div></div>
+        <!-- <textarea id = "id1"></textarea> --> </div></div></div></div>
         <p>
             <i>Decentralized Real-Time Collaborative Editor using CRDT</i>
         </p>
-        <!--
+        
         <div id="editor"></div>  
-        --> 
+        
         <!--
         <script src="http://ace.c9.io/build/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
             -->
