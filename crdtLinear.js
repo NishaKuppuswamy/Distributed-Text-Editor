@@ -16,7 +16,6 @@ class CRDT {
     this.strategy = strategy;
     this.strategyCache = [];
     this.mult = mult;
-    this.target = "";
   }
 
   handleLocalInsert(val, index, connections) {
@@ -31,17 +30,16 @@ class CRDT {
     		var c;
     		for(let conn of connections) {
     			//console.log("site "+conn.id);
-    			if(conn.target == this.siteId) {
+    			if(conn.id == this.siteId) {
     				//console.log("site ma"+conn.id);
     				idFound = true;
-    				this.target = conn.target;
     				c = conn.conn;
     			}
     		}
     //	console.log("In local connec "+connections.id);
     	  //console.log("id found "+idFound);
     	  if(idFound) {
-    		c.send("GetConnections:"+{"id":this.siteId, "char":char});
+    		c.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char}));
     		
     	  }
     	  else
@@ -59,7 +57,7 @@ class CRDT {
 	        peer.on('open', function(id){
 	                var c = peer.connect(conn.id);
 						c.on('open', function(){
-							//console.log("logingggggggggggg");
+							console.log("logingggggggggggg");
 	                        c.send("Insert:"+charJSON);
 						});
 	        });
@@ -69,9 +67,12 @@ class CRDT {
 	  }
   }
   broadcast(char, connections) {
-	  console.log("calling broadcast");
+	  console.log("calling broadcast "+connections[1].conn);
 	  var charJSON = JSON.stringify({Insert: char});
-	  connections.forEach(c => c.conn.send("Insert:"+charJSON));
+	  for(let connection of connections) {
+		  connection.conn.send("Insert:"+charJSON);
+	  }
+	  //connections.forEach(c => c.conn.send("Insert:"+charJSON));
   }
 
   handleRemoteInsert(char) {
