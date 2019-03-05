@@ -2,17 +2,18 @@ let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
 let char = require('./char');
 let Char = char.Char;
+let compareTo = char.compareTo;
 let version = require('./versionList');
 let VersionList = version.VersionList;
 
 
 class CRDT {
-  constructor(/*controller,*/siteID, base=32, boundary=10, strategy='random', mult=2) {
+  constructor(/*controller,*/siteId, base=32, boundary=10, strategy='random', mult=2) {
     //this.controller = controller;
     //this.vector = controller.vector;    
-    this.list = new VersionList(siteID);
+    this.list = new VersionList(siteId);
     this.struct = [];
-    this.siteId = siteID;
+    this.siteId = siteId;//controller.siteID;
     this.text = "";
     this.base = base;
     this.boundary = boundary;
@@ -21,18 +22,51 @@ class CRDT {
     this.mult = mult;
   }
 
-  handleLocalInsert(val, index) {
+  handleLocalInsert(val, index, connections) {
     this.list.incCounter();
     console.log(this.list);
     //console.log(val);      
     const char = this.generateChar(val, index);
     this.insertChar(index, char);
     this.insertText(char.value, index);
-
+    if(connections != undefined) {
+    		var idFound = false;
+    		for(let conn of connections) {
+    			if(conn.id == this.siteId) {
+    				idFound = true;
+    			}
+    		}
+    //	console.log("In local connec "+connections.id);
+    	  if(idFound)
+    		this.broadcastNew(char, connections);
+    	  else
+    	    this.broadcast(char, connections);
+    }
     //this.controller.broadcastInsertion(char);
+  }
+  broadcastNew(char, connections) {
+	  var charJSON = JSON.stringify({Insert: char});
+	  for(let conn of connections) {
+		  console.log("calling broadcast "+conn.id+" from "+this.siteId);
+		  //to do: establish connection connect (Not working)
+		  var peer = new Peer({key: 'api'});
+	        peer.on('open', function(id){
+	                var c = peer.connect(conn.id);
+						c.on('open', function(){
+	                        //Sending my peer id to the connecting id
+	                        c.send("Insert:"+charJSON);
+						});
+	        });
+	  }
+  }
+  broadcast(char, connections) {
+	  console.log("calling broadcast");
+	  var charJSON = JSON.stringify({Insert: char});
+	  connections.forEach(c => c.conn.send("Insert:"+charJSON));
   }
 
   handleRemoteInsert(char) {
+	console.log("Remote ins "+char);
     const index = this.findInsertIndex(char);
     this.insertChar(index, char);
     this.insertText(char.value, index);
@@ -69,15 +103,15 @@ class CRDT {
     let right = this.struct.length - 1;
     let mid, compareNum;
 
-    if (this.struct.length === 0 || char.compareTo(this.struct[left]) < 0) {
+    if (this.struct.length === 0 || compareTo(this.struct[left]) < 0) {
       return left;
-    } else if (char.compareTo(this.struct[right]) > 0) {
+    } else if (compareTo(this.struct[right]) > 0) {
       return this.struct.length;
     }
 
     while (left + 1 < right) {
       mid = Math.floor(left + (right - left) / 2);
-      compareNum = char.compareTo(this.struct[mid]);
+      compareNum = compareTo(this.struct[mid]);
 
       if (compareNum === 0) {
         return mid;
@@ -88,7 +122,7 @@ class CRDT {
       }
     }
 
-    return char.compareTo(this.struct[left]) === 0 ? left : right;
+    return compareTo(this.struct[left]) === 0 ? left : right;
   }
 
   findIndexByPosition(char) {
@@ -102,7 +136,7 @@ class CRDT {
 
     while (left + 1 < right) {
       mid = Math.floor(left + (right - left) / 2);
-      compareNum = char.compareTo(this.struct[mid]);
+      compareNum = compareTo(this.struct[mid]);
 
       if (compareNum === 0) {
         return mid;
@@ -113,9 +147,9 @@ class CRDT {
       }
     }
 
-    if (char.compareTo(this.struct[left]) === 0) {
+    if (compareTo(this.struct[left]) === 0) {
       return left;
-    } else if (char.compareTo(this.struct[right]) === 0) {
+    } else if (compareTo(this.struct[right]) === 0) {
       return right;
     } else {
       throw new Error("Character does not exist in CRDT.");
