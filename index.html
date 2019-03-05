@@ -34,7 +34,7 @@
             if(canChange){
                  var pos = editor.selection.getCursor();
                  var index = editor.getSession().getDocument().positionToIndex(pos);
-                 LogData(index, e.lines[0], e.action);
+                 LogData(index, e.lines[0], e.action, connections);
             }
         });
 
@@ -50,6 +50,8 @@
                         connect(c);
                         //Sending my peer id to the connecting id
                         conn.send("Data:"+peer.id);
+                        // Adding the target id to my list of connections
+                        connections.push({"id": peer.id, "conn":conn, "target": targetId});                        
 					});
             } 
         });
@@ -63,7 +65,7 @@
                     // Adding the connecting peer to my list of connections
                     if(connections != undefined || !connections.id.includes(incomingPeerId)){
                         console.log("log incom id "+incomingPeerId);
-                        connections.push({"id":incomingPeerId, "conn":conn});
+                        connections.push({"id":incomingPeerId, "conn":conn, "target": peer.id});
                         console.log(connections);
                     }
                     //Sending my current existing objects to the connecting peer id
@@ -96,17 +98,29 @@
                         console.log(crdt);
                     }                    
                 }
-                if(data.startsWith("Connection list")){
+                /*if(data.startsWith("Connection list")){
                     var connect = data.replace("Connection list:",""); 
                     connect = JSON.parse(connect);                 
-                }
+                }*/
                 if(data.startsWith("Insert")) {
                 		var connect = data.replace("Insert:","");
                 		console.log("HTML remote "+JSON.parse(connect).Insert.value);
                 		LogRemoteInsertData(JSON.parse(connect).Insert, connect);
                 }
+                if(data.startsWith("GetConnections")) {
+                		var received = data.replace("GetConnections:","");
+                		var i = received.id;
+                		var character = received.char;
+                		conn.send("SendConnections:"+{"id":i, "char":character, "conn":connections});
+                }
+                if(data.startsWith("SendConnections")) {
+                		var insertData = data.replace("SendConnections:","");
+                		//console.log("GOT AT "+insertData.id+" "+insertData.conn);
+                		if(peer.id == insertData.id)
+                			SendConnections(insertData.char, insertData.connections);
+                }
             });
-            conn.on('close', disconnect);
+            //conn.on('close', disconnect);
         }
 
         function disconnect(){

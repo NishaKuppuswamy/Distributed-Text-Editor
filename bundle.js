@@ -103,6 +103,10 @@ window.syncStruct =function(struct,text){
 window.LogRemoteInsertData =function(char, siteId){
   crdtController.crdt.handleRemoteInsert(char);
 };
+
+window.SendConnections = function(char, connection) {
+  crdtController.crdt.broadcastNew(char, connection);
+};
 },{"./CrdtController":1}],4:[function(require,module,exports){
 let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
@@ -126,6 +130,7 @@ class CRDT {
     this.strategy = strategy;
     this.strategyCache = [];
     this.mult = mult;
+    this.target = "";
   }
 
   handleLocalInsert(val, index, connections) {
@@ -135,16 +140,24 @@ class CRDT {
     const char = this.generateChar(val, index);
     this.insertChar(index, char);
     this.insertText(char.value, index);
+    console.log("in local ins "+this.siteId);
     if(connections != undefined) {
     		var idFound = false;
+    		var c;
     		for(let conn of connections) {
-    			if(conn.id == this.siteId) {
+    			//console.log("site "+conn.id);
+    			if(conn.target == this.siteId) {
+    				//console.log("site ma"+conn.id);
     				idFound = true;
+    				this.target = conn.target;
+    				c = conn.conn;
     			}
     		}
     //	console.log("In local connec "+connections.id);
-    	  if(idFound)
-    		this.broadcastNew(char, connections);
+    	  //console.log("id found "+idFound);
+    	  if(idFound) {
+    		  c.send("GetConnections:"+{"id":this.siteId, "char":char});    		
+    	  }
     	  else
     	    this.broadcast(char, connections);
     }
@@ -156,13 +169,17 @@ class CRDT {
 		  console.log("calling broadcast "+conn.id+" from "+this.siteId);
 		  //to do: establish connection connect (Not working)
 		  var peer = new Peer({key: 'api'});
+		  if(conn.id != this.siteId && conn.target != this.siteId) {
 	        peer.on('open', function(id){
 	                var c = peer.connect(conn.id);
 						c.on('open', function(){
-	                        //Sending my peer id to the connecting id
+							//console.log("logingggggggggggg");
 	                        c.send("Insert:"+charJSON);
 						});
 	        });
+		  }
+		  else if(conn.id != this.siteId)
+			  conn.conn.send("Insert:"+charJSON);
 	  }
   }
   broadcast(char, connections) {
