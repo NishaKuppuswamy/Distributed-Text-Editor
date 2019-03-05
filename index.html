@@ -51,7 +51,7 @@
                 var ind = newLineArr[newLineArr.length-1];
                 position = ind + position+1;
             }
-            LogData(position, obj2.text[0], obj2.origin);
+            LogData(position, obj2.text[0], obj2.origin, connections);
         });
 
         var conn;
@@ -60,6 +60,7 @@
             console.log('peer id: '+peer.id);
             createController(peer.id); 
             if(targetId != 0){
+            		console.log("target not 0");
                 var c = peer.connect(targetId);
 					c.on('open', function(){
                         connect(c);
@@ -76,17 +77,18 @@
                 if(data.startsWith("Data")){
                     var incomingPeerId = data.split(":")[1];
                     // Adding the connecting peer to my list of connections
-                    if(!connections.includes(incomingPeerId)){
-                        connections.push(incomingPeerId);
+                    if(connections != undefined || !connections.id.includes(incomingPeerId)){
+                        console.log("log incom id "+incomingPeerId);
+                        connections.push({"id":incomingPeerId, "conn":conn});
                         console.log(connections);
                     }
                     //Sending my current existing objects to the connecting peer id
                     //(peerid,connections list, struct, version)
                     var crdt = fetchCrdt();
                     crdt = JSON.stringify(crdt);
-                    connJSON = JSON.stringify(connections);
+                    //connJSON = JSON.stringify(connections);
                     conn.send("Initial crdt:"+crdt);
-                    conn.send("Connection list:"+connJSON);
+                    //conn.send("Connection list:"+connJSON);
                 }
                 if(data.startsWith("Initial crdt")){
                     var crdt = data.replace("Initial crdt:",""); 
@@ -107,6 +109,11 @@
                 if(data.startsWith("Connection list")){
                     var connect = data.replace("Connection list:",""); 
                     connect = JSON.parse(connect);                 
+                }
+                if(data.startsWith("Insert")) {
+                		var connect = data.replace("Insert:","");
+                		console.log("HTML remote "+JSON.parse(connect).Insert.value);
+                		LogRemoteInsertData(JSON.parse(connect).Insert, connect);
                 }
             });
             conn.on('close', disconnect);

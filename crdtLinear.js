@@ -5,11 +5,11 @@ let Char = char.Char;
 
 
 class CRDT {
-  constructor(/*controller,*/ base=32, boundary=10, strategy='random', mult=2) {
+  constructor(/*controller,*/siteId, base=32, boundary=10, strategy='random', mult=2) {
     //this.controller = controller;
     //this.vector = controller.vector;
     this.struct = [];
-    this.siteId = 1;//controller.siteID;
+    this.siteId = siteId;//controller.siteID;
     this.text = "";
     this.base = base;
     this.boundary = boundary;
@@ -18,17 +18,50 @@ class CRDT {
     this.mult = mult;
   }
 
-  handleLocalInsert(val, index) {
+  handleLocalInsert(val, index, connections) {
    // this.vector.increment();
     console.log(val);      
     const char = this.generateChar(val, index);
     this.insertChar(index, char);
     this.insertText(char.value, index);
-
+    if(connections != undefined) {
+    		var idFound = false;
+    		for(let conn of connections) {
+    			if(conn.id == this.siteId) {
+    				idFound = true;
+    			}
+    		}
+    //	console.log("In local connec "+connections.id);
+    	  if(idFound)
+    		this.broadcastNew(char, connections);
+    	  else
+    	    this.broadcast(char, connections);
+    }
     //this.controller.broadcastInsertion(char);
+  }
+  broadcastNew(char, connections) {
+	  var charJSON = JSON.stringify({Insert: char});
+	  for(let conn of connections) {
+		  console.log("calling broadcast "+conn.id+" from "+this.siteId);
+		  //to do: establish connection connect (Not working)
+		  var peer = new Peer({key: 'api'});
+	        peer.on('open', function(id){
+	                var c = peer.connect(conn.id);
+						c.on('open', function(){
+	                        //Sending my peer id to the connecting id
+	                        c.send("Insert:"+charJSON);
+						});
+	        });
+	  }
+  }
+  broadcast(char, connections) {
+	  console.log("calling broadcast");
+	  var charJSON = JSON.stringify({Insert: char});
+	  connections.forEach(c => c.conn.send("Insert:"+charJSON));
   }
 
   handleRemoteInsert(char) {
+	console.log("Remote ins "+char);
     const index = this.findInsertIndex(char);
     this.insertChar(index, char);
     this.insertText(char.value, index);

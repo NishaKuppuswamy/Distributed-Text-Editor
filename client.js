@@ -12,9 +12,9 @@ window.createController =function(siteID){
   //crdtController.siteID = siteID;
 };
 
-window.LogData =function(pos, value, action){
+window.LogData =function(pos, value, action, connections){
   if(action == "+input")
-  crdtController.crdt.handleLocalInsert(value, pos);
+  crdtController.crdt.handleLocalInsert(value, pos, connections);
   if(action == "+delete")
   crdtController.crdt.handleLocalDelete(pos);
 };
@@ -25,4 +25,8 @@ window.fetchCrdt =function(){
 
 window.syncStruct =function(struct){
   crdtController.crdt.struct = struct;
+};
+
+window.LogRemoteInsertData =function(char, siteId){
+  crdtController.crdt.handleRemoteInsert(char);
 };
