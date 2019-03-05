@@ -111,7 +111,6 @@ class CRDT {
     //this.vector = controller.vector;    
     this.list = new VersionList(siteID);
     this.struct = [];
-    //this.siteId = 1;//controller.siteID;
     this.siteId = siteID;
     this.text = "";
     this.base = base;
@@ -153,7 +152,6 @@ class CRDT {
     console.log(this.list);
     const char = this.struct.splice(idx, 1)[0];
     this.deleteText(idx);
-
     //this.controller.broadcastDeletion(char);
   }
 
@@ -227,8 +225,7 @@ class CRDT {
     const posBefore = (this.struct[index - 1] && this.struct[index - 1].position) || [];
     const posAfter = (this.struct[index] && this.struct[index].position) || [];
     const newPos = this.generatePosBetween(posBefore, posAfter);
-    const localCounter = 0;// this.vector.localVersion.counter;
-
+    const localCounter = this.list.localVersion.counter;
     return new Char(val, localCounter, this.siteId, newPos);
   }
 
@@ -318,6 +315,9 @@ class CRDT {
 
   deleteText(index) {
     this.text = this.text.slice(0, index) + this.text.slice(index + 1);
+    console.log("Deleting char");
+    console.log(this.struct);  
+    console.log(this.text); 
   }
 }
 
