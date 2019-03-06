@@ -1,3 +1,6 @@
+let identifier = require('./identifier');
+let Identifier = identifier.Identifier;
+
 class Char {
   constructor(value, counter, siteId, identifiers) {
     this.position = identifiers;
@@ -12,8 +15,8 @@ class Char {
     const pos2 = otherChar.position;
 
     for (let i = 0; i < Math.min(pos1.length, pos2.length); i++) {
-      id1 = pos1[i];
-      id2 = pos2[i];
+      id1 = new Identifier(pos1[i].digit,pos1[i].siteId);
+      id2 = new Identifier(pos2[i].digit,pos2[i].siteId);
       comp = id1.compareTo(id2);
 
       if (comp !== 0) {

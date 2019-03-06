@@ -16,6 +16,11 @@ class CrdtController {
         if(action == "remove")
         this.crdt.handleLocalDelete(value);
     }
+    
+    handleRemoteInsert(char){
+        char = new Char(char.value, char.counter, char.siteId, char.position);
+        return this.crdt.handleRemoteInsert(char);
+    }
 
     /*listCrdtMap() {
         console.log("listcrdt");

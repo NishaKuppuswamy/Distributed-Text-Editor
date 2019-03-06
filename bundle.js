@@ -17,6 +17,11 @@ class CrdtController {
         if(action == "remove")
         this.crdt.handleLocalDelete(value);
     }
+    
+    handleRemoteInsert(char){
+        char = new Char(char.value, char.counter, char.siteId, char.position);
+        return this.crdt.handleRemoteInsert(char);
+    }
 
     /*listCrdtMap() {
         console.log("listcrdt");
@@ -30,6 +35,9 @@ module.exports = {
     CrdtController: CrdtController
 }
 },{"./crdtLinear":4}],2:[function(require,module,exports){
+let identifier = require('./identifier');
+let Identifier = identifier.Identifier;
+
 class Char {
   constructor(value, counter, siteId, identifiers) {
     this.position = identifiers;
@@ -44,8 +52,8 @@ class Char {
     const pos2 = otherChar.position;
 
     for (let i = 0; i < Math.min(pos1.length, pos2.length); i++) {
-      id1 = pos1[i];
-      id2 = pos2[i];
+      id1 = new Identifier(pos1[i].digit,pos1[i].siteId);
+      id2 = new Identifier(pos2[i].digit,pos2[i].siteId);
       comp = id1.compareTo(id2);
 
       if (comp !== 0) {
@@ -66,7 +74,7 @@ class Char {
 module.exports = {
     Char: Char
 }
-},{}],3:[function(require,module,exports){
+},{"./identifier":5}],3:[function(require,module,exports){
 let controller = require('./CrdtController');
 let CrdtController = controller.CrdtController;
 const {parse, stringify} = require('flatted/cjs');
@@ -110,17 +118,16 @@ window.SendResult = function(result) {
 };
 window.SendConnections = function(connections) {
 	var conn;
-	for(let c of connections) {
+	for(let c of connections) { //find connection object between initiator and the peer that has requested the connections
 		if(c.id == r.id)
 			conn = c.conn;
 	}
-	conn.send(JSON.stringify(r)+" break "+stringify(connections));
+	conn.send(JSON.stringify(r)+" break "+stringify(connections)); //use the found connection object to send connections to requested peer 
 };
 
 
 window.CallBroadcast = function(char, connections) {
-	console.log("CALIING FROM CLIENT "+parse(connections)[0].conn);
-	crdtController.crdt.broadcast(char, parse(connections));
+	crdtController.crdt.broadcastNew(char, parse(connections));
 };
 
 },{"./CrdtController":1,"flatted/cjs":6}],4:[function(require,module,exports){
@@ -128,7 +135,7 @@ let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
 let char = require('./char');
 let Char = char.Char;
-let compareTo = char.compareTo;
+//let compareTo = char.compareTo;
 let version = require('./versionList');
 let VersionList = version.VersionList;
 
@@ -146,6 +153,7 @@ class CRDT {
     this.strategy = strategy;
     this.strategyCache = [];
     this.mult = mult;
+    this.connectionToTarget = "";
   }
 
   handleLocalInsert(val, index, connections) {
@@ -155,50 +163,42 @@ class CRDT {
     const char = this.generateChar(val, index);
     this.insertChar(index, char);
     this.insertText(char.value, index);
-    console.log("in local ins "+this.siteId);
+    /* check if the local insert is done by initiator*/
     if(connections != undefined) {
     		var idFound = false;
-    		var c;
     		for(let conn of connections) {
-    			//console.log("site "+conn.id);
-    			if(conn.id == this.siteId) {
-    				//console.log("site ma"+conn.id);
-    				idFound = true;
-    				c = conn.conn;
+    			if(conn.id == this.siteId) {		//local insert is not done by initiator
+    				idFound = true;				
+    				this.connectionToTarget = conn.conn; //get connection object (connection between initiator and this.siteId)
     			}
     		}
-    //	console.log("In local connec "+connections.id);
-    	  //console.log("id found "+idFound);
-    	  if(idFound) {
-    		c.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char}));
-    		
+    	  if(idFound) {		//ask initiator to send all the connections
+    		  this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char}));    		
     	  }
     	  else
-    	    this.broadcast(char, connections);
+    	    this.broadcast(char, connections); //will be executed if local insert is done by initiator
     }
-    //this.controller.broadcastInsertion(char);
   }
+  /* function to establish a new connection and broadcast the change*/
   broadcastNew(char, connections) {
 	  var charJSON = JSON.stringify({Insert: char});
-	  for(let conn of connections) {
-		  console.log("calling broadcast "+conn.id+" from "+this.siteId);
-		  //to do: establish connection connect (Not working)
+	  for(let con of connections) {
 		  var peer = new Peer({key: 'api'});
-		  if(conn.id != this.siteId && conn.target != this.siteId) {
-	        peer.on('open', function(id){
-	                var c = peer.connect(conn.id);
+		  var sendTo = con.conn;
+		  if(con.id != this.siteId) {
+	        peer.on('open', function(id){		//if the connection is not between initiator and this.siteId, create new connection
+	                var c = peer.connect(con.id);
 						c.on('open', function(){
-							console.log("logingggggggggggg");
 	                        c.send("Insert:"+charJSON);
 						});
 	        });
 		  }
-		  else if(conn.id != this.siteId)
-			  conn.conn.send("Insert:"+charJSON);
+		  else
+			  this.connectionToTarget.send("Insert:"+charJSON); //use the connection established with the target, to send the change to target
 	  }
   }
-  broadcast(char, connections) {
-	  console.log("calling broadcast "+connections[1].conn);
+  /*function to broadcast the change with the existing connections */
+  broadcast(char, connections) { //will be executed if local insert is done by initiator, broadcast local insert to all of its' connections
 	  var charJSON = JSON.stringify({Insert: char});
 	  for(let connection of connections) {
 		  connection.conn.send("Insert:"+charJSON);
@@ -246,15 +246,15 @@ class CRDT {
     let right = this.struct.length - 1;
     let mid, compareNum;
 
-    if (this.struct.length === 0 || compareTo(this.struct[left]) < 0) {
+    if (this.struct.length === 0 || char.compareTo(this.struct[left]) < 0) {
       return left;
-    } else if (compareTo(this.struct[right]) > 0) {
+    } else if (char.compareTo(this.struct[right]) > 0) {
       return this.struct.length;
     }
 
     while (left + 1 < right) {
       mid = Math.floor(left + (right - left) / 2);
-      compareNum = compareTo(this.struct[mid]);
+      compareNum = char.compareTo(this.struct[mid]);
 
       if (compareNum === 0) {
         return mid;
@@ -265,7 +265,7 @@ class CRDT {
       }
     }
 
-    return compareTo(this.struct[left]) === 0 ? left : right;
+    return char.compareTo(this.struct[left]) === 0 ? left : right;
   }
 
   findIndexByPosition(char) {
@@ -279,7 +279,7 @@ class CRDT {
 
     while (left + 1 < right) {
       mid = Math.floor(left + (right - left) / 2);
-      compareNum = compareTo(this.struct[mid]);
+      compareNum = char.compareTo(this.struct[mid]);
 
       if (compareNum === 0) {
         return mid;
@@ -290,9 +290,9 @@ class CRDT {
       }
     }
 
-    if (compareTo(this.struct[left]) === 0) {
+    if (char.compareTo(this.struct[left]) === 0) {
       return left;
-    } else if (compareTo(this.struct[right]) === 0) {
+    } else if (char.compareTo(this.struct[right]) === 0) {
       return right;
     } else {
       throw new Error("Character does not exist in CRDT.");
@@ -400,7 +400,7 @@ class CRDT {
 module.exports = {
     CRDT: CRDT
 }
-},{"./char":2,"./identifier":5,"./versionList":7}],5:[function(require,module,exports){
+},{"./char":2,"./identifier":5,"./versionList":8}],5:[function(require,module,exports){
 class Identifier {
   constructor(digit, siteId) {
     this.digit = digit; 
@@ -547,4 +547,102 @@ var Flatted = (function (Primitive, primitive) {
 }(String, 'string'));
 module.exports = Flatted;
 
-},{}]},{},[3]);
+},{}],7:[function(require,module,exports){
+class Version {
+  constructor(siteId) {
+    this.siteId = siteId;
+    // Operation count for that particular siteID
+    this.counter = 0;
+    //Operation not performed yet are stored in unHandled
+    this.unHandled = [];
+  }
+
+  updateVersion(version) {
+    const incCounter = version.counter;
+    // If incoming counter is less than the current counter add to unHandled array
+    if (incCounter <= this.counter) {
+      const idx = this.unHandled.indexOf(incCounter);
+      this.unHandled.splice(idx, 1);
+    } 
+    //If incoming counter is current counter+1 then it is the next operation
+    else if (incCounter === this.counter + 1) {
+      this.counter = this.counter + 1;
+    } 
+    // If incoming counter is greater than current counter+1 
+    //add all the missing operation counter to the unHandled array
+    else {
+      for (let i = this.counter + 1; i < incCounter; i++) {
+        this.unHandled.push(i);
+      }
+      this.counter = incCounter;
+    }
+  }
+}
+
+module.exports = {
+    Version: Version
+}
+},{}],8:[function(require,module,exports){
+let ver = require('./version');
+let Version = ver.Version;
+
+//List of versions for each siteID to maintain consistency and 
+//avoid duplicate operations
+class VersionList {
+   constructor(siteId) {
+    this.versions = [];
+    this.localVersion = new Version(siteId);
+    this.versions.push(this.localVersion);
+  }
+
+   //Increment counter of local version for each operation
+   incCounter() {
+    this.localVersion.counter++;
+  }
+  //Updating the versionlist on receiving versions from other sites 
+  updateVersionList(inVersion) {
+    const exists = this.versions.find(version => inVersion.siteId === version.siteId);
+    //If the site ID of the received version doesnot already exist create a new version
+    //and update the new version
+    if (!exists) {
+      const newVersion = new Version(inVersion.siteId);
+      newVersion.updateVersion(inVersion);
+      this.versions.push(newVersion);
+    } else {
+        exists.updateVersion(inVersion);
+    }
+  } 
+
+  // Validating if the incoming operation has already been applied
+  applied(inVersion) {
+    const localInVersion = this.getVersionFromList(inVersion);
+    const applied = !!localInVersion;
+    // If the version itself doesnt exist in the list return false
+    if (!applied){
+        return false;
+    }
+    //If version exists check for the counter and if it has been already handled
+    const isLower = inVersion.counter <= localInVersion.counter;
+    const isUnHandled = localInVersion.unHandled.includes(inVersion.counter);
+    return isLower && !isUnHandled;
+  }
+
+  //Check if version exists in the list and return it
+  getVersionFromList(inVersion) {
+    return this.versions.find(version => version.siteId === inVersion.siteId);
+  }
+
+  //Returns the siteId and counter of local version
+  getLocalVersion() {
+    return {
+      siteId: this.localVersion.siteId,
+      counter: this.localVersion.counter
+    };
+  }
+}
+
+module.exports = {
+    VersionList: VersionList
+}
+
+},{"./version":7}]},{},[3]);

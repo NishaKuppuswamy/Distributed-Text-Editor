@@ -48,6 +48,8 @@
                 var c = peer.connect(targetId);
 					c.on('open', function(){
                         connect(c);
+                        //Sending my peer id to the connecting id
+                        connections.push({"id": peer.id, "conn":conn, "target": targetId});	//target is the initiator, peer stores only one connection (connection with target)
                         conn.send("Data:"+peer.id);
                         //Sending my peer id to the connecting id
                         connections.push({"id": peer.id, "conn":conn, "target": targetId});                       
@@ -64,7 +66,7 @@
                     // Adding the connecting peer to my list of connections
                     if(connections != undefined || !connections.id.includes(incomingPeerId)){
                         console.log("log incom id "+incomingPeerId);
-                        connections.push({"id":incomingPeerId, "conn":conn, "target": peer.id});
+                        connections.push({"id":incomingPeerId, "conn":conn, "target": peer.id});	//target is the initiator, initiator stores all the connections
                         console.log(connections);
                     }
                     //Sending my current existing objects to the connecting peer id
@@ -97,31 +99,20 @@
                         console.log(crdt);
                     }                    
                 }
-                else if(data.startsWith("Connection list")){
-                    var connect = data.replace("Connection list:",""); 
-                    connect = JSON.parse(connect);                 
-                }
-                else if(data.startsWith("Insert")) {
+                else if(data.startsWith("Insert")) {	
                 		var connect = data.replace("Insert:","");
                 		console.log("HTML remote "+JSON.parse(connect).Insert.value);
                 		LogRemoteInsertData(JSON.parse(connect).Insert, connect);
                 }
                 else if(data.startsWith("GetConnections")) {
-                		var r = data.replace("GetConnections:","");
-                		//var result = Object.assign(rJSON, connections);
-                		console.log("GET "+r+" TYPE "+connections);
-                		//conn.send(JSON.stringify(result));
-                		SendResult(r);
+                		var r = data.replace("GetConnections:",""); //has peer id which has requested the connections and char object
+                		SendResult(r); 
                 		SendConnections(connections);
                 }
-                else {
+                else { //called by SendConnections in order to call the broadcastNew function
                 		var splitData = data.split(" break ");
                 		var insertData = JSON.parse(splitData[0]);
-                		console.log("GOT AT "+insertData.id+" "+insertData.char);
-                		//if(peer.id == insertData.id) {
-                			console.log("In SEND CONNECTION :"+insertData.char);
-                			CallBroadcast(insertData.char, splitData[1]);
-                		//}
+                		CallBroadcast(insertData.char, splitData[1]);
                 }
             });
             //conn.on('close', disconnect);
