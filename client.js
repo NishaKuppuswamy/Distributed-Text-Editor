@@ -33,11 +33,11 @@ window.syncStruct =function(struct,text){
 };
 
 window.LogRemoteInsertData =function(char){
-  crdtController.handleRemoteInsert(char);
+  return crdtController.handleRemoteInsert(char);
 };
 
 window.LogRemoteDeleteData =function(char, id){
-  crdtController.handleRemoteDelete(char, id);
+  return crdtController.handleRemoteDelete(char, id);
 };
 
 window.SendResult = function(result) {

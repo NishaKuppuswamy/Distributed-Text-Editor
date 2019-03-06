@@ -50,6 +50,8 @@ class CRDT {
   broadcastNew(char, connections, action) {
 	  var charJSON = JSON.stringify({Insert: char});
 	  for(let con of connections) {
+		  console.log("NEW CONNECTION ");
+		  console.log(con);
 		  var peer = new Peer({key: 'api'});
 		  var sendTo = con.conn;
 		  if(con.id != this.siteId) {
@@ -75,6 +77,8 @@ class CRDT {
   broadcast(char, connections, action) { //will be executed if local insert is done by initiator, broadcast local insert to all of its' connections
 	  var charJSON = JSON.stringify({Insert: char});
 	  for(let connection of connections) {
+		  console.log("CONNECTION ");
+		  console.log(connection);
 		  if(action === "insert")
 			  connection.conn.send("Insert:"+charJSON);
 		  else if(action == "delete")
@@ -132,6 +136,7 @@ class CRDT {
 
     //this.controller.deleteFromEditor(char.value, index, siteId);
     this.deleteText(index);
+    return this.text;
   }
 
   findInsertIndex(char) {
