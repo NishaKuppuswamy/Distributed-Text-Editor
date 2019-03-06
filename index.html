@@ -50,9 +50,7 @@
                         connect(c);
                         //Sending my peer id to the connecting id
                         connections.push({"id": peer.id, "conn":conn, "target": targetId});	//target is the initiator, peer stores only one connection (connection with target)
-                        conn.send("Data:"+peer.id);
-                        //Sending my peer id to the connecting id
-                        connections.push({"id": peer.id, "conn":conn, "target": targetId});                       
+                        conn.send("Data:"+peer.id);                   
 					});
             } 
         });
@@ -60,7 +58,7 @@
         function connect(c){
             conn = c
             conn.on('data',function(data){
-                console.log(data);
+                //console.log(data);
                 if(data.startsWith("Data")){
                     var incomingPeerId = data.split(":")[1];
                     // Adding the connecting peer to my list of connections
@@ -103,11 +101,22 @@
                 		var connect = data.replace("Insert:","");
                 		console.log("HTML remote "+JSON.parse(connect).Insert.value);
                         var text = LogRemoteInsertData(JSON.parse(connect).Insert, connect);
+                        console.log("TEXT "+text);
                         canChange = false;
                         var document = editor.getSession().getDocument(); 
                         document.setValue(text);
                         canChange = true;
-
+                		//LogRemoteInsertData(JSON.parse(connect).Insert);
+                }
+                else if(data.startsWith("Delete")) {	
+                		var connect = data.replace("Delete:","").split(" ");
+                		console.log("HTML remote "+JSON.parse(connect[0]).Insert.value);
+                		var text = LogRemoteDeleteData(JSON.parse(connect[0]).Insert, connect[1]);
+                        canChange = false;
+                        var document = editor.getSession().getDocument(); 
+                        document.setValue(text);
+                        canChange = true;
+                		//LogRemoteDeleteData(JSON.parse(connect[0]).Insert, connect[1]);
                 }
                 else if(data.startsWith("GetConnections")) {
                 		var r = data.replace("GetConnections:",""); //has peer id which has requested the connections and char object
@@ -117,7 +126,7 @@
                 else { //called by SendConnections in order to call the broadcastNew function
                 		var splitData = data.split(" break ");
                 		var insertData = JSON.parse(splitData[0]);
-                		CallBroadcast(insertData.char, splitData[1]);
+                		CallBroadcast(insertData.char, splitData[1], insertData.action);
                 }
             });
             //conn.on('close', disconnect);

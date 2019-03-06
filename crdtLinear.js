@@ -40,35 +40,49 @@ class CRDT {
     			}
     		}
     	  if(idFound) {		//ask initiator to send all the connections
-    		  this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char}));    		
+    		this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"insert"}));
     	  }
     	  else
-    	    this.broadcast(char, connections); //will be executed if local insert is done by initiator
+    	    this.broadcast(char, connections, "insert"); //will be executed if local insert is done by initiator
     }
   }
   /* function to establish a new connection and broadcast the change*/
-  broadcastNew(char, connections) {
+  broadcastNew(char, connections, action) {
 	  var charJSON = JSON.stringify({Insert: char});
 	  for(let con of connections) {
+		  console.log("NEW CONNECTION ");
+		  console.log(con);
 		  var peer = new Peer({key: 'api'});
 		  var sendTo = con.conn;
 		  if(con.id != this.siteId) {
 	        peer.on('open', function(id){		//if the connection is not between initiator and this.siteId, create new connection
-	                var c = peer.connect(con.id);
-						c.on('open', function(){
-	                        c.send("Insert:"+charJSON);
-						});
+	        		var c = peer.connect(con.id);
+				c.on('open', function(){
+					if(action == "insert")
+						c.send("Insert:"+charJSON);
+					else 
+						c.send("Delete:"+charJSON+" "+this.siteId);
+				});
 	        });
 		  }
-		  else
-			  this.connectionToTarget.send("Insert:"+charJSON); //use the connection established with the target, to send the change to target
+		  else {
+			  if(action === "insert")
+				  this.connectionToTarget.send("Insert:"+charJSON); //use the connection established with the target, to send the change to target
+			  else if(action == "delete")
+				  this.connectionToTarget.send("Delete:"+charJSON); //use the connection established with the target, to send the change to target
+		  }
 	  }
   }
   /*function to broadcast the change with the existing connections */
-  broadcast(char, connections) { //will be executed if local insert is done by initiator, broadcast local insert to all of its' connections
+  broadcast(char, connections, action) { //will be executed if local insert is done by initiator, broadcast local insert to all of its' connections
 	  var charJSON = JSON.stringify({Insert: char});
 	  for(let connection of connections) {
-		  connection.conn.send("Insert:"+charJSON);
+		  console.log("CONNECTION ");
+		  console.log(connection);
+		  if(action === "insert")
+			  connection.conn.send("Insert:"+charJSON);
+		  else if(action == "delete")
+			  connection.conn.send("Delete:"+charJSON+" "+this.siteId);
 	  }
 	  //connections.forEach(c => c.conn.send("Insert:"+charJSON));
   }
@@ -92,20 +106,37 @@ class CRDT {
     console.log(this.struct);
   }
 
-  handleLocalDelete(idx) {
+  handleLocalDelete(idx, connections) {
     this.list.incCounter();
     console.log(this.list);
     const char = this.struct.splice(idx, 1)[0];
     this.deleteText(idx);
+    if(connections != undefined) {
+		var idFound = false;
+		for(let conn of connections) {
+			if(conn.id == this.siteId) {		//local insert is not done by initiator
+				idFound = true;				
+				this.connectionToTarget = conn.conn; //get connection object (connection between initiator and this.siteId)
+			}
+		}
+	  if(idFound) {		//ask initiator to send all the connections
+		this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"delete"}));
+	  }
+	  else
+	    this.broadcast(char, connections, "delete"); //will be executed if local insert is done by initiator
     //this.controller.broadcastDeletion(char);
+    }
   }
 
   handleRemoteDelete(char, siteId) {
+	  
+	console.log("In remote delete"+ char.value);
     const index = this.findIndexByPosition(char);
     this.struct.splice(index, 1);
 
     //this.controller.deleteFromEditor(char.value, index, siteId);
     this.deleteText(index);
+    return this.text;
   }
 
   findInsertIndex(char) {
