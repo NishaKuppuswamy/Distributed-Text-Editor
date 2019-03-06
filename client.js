@@ -16,7 +16,7 @@ window.LogData =function(pos, value, action, connections){
   if(action == "insert")
   crdtController.crdt.handleLocalInsert(value, pos, connections);
   if(action == "remove")
-  crdtController.crdt.handleLocalDelete(pos);
+  crdtController.crdt.handleLocalDelete(pos, connections);
 };
 
 window.fetchCrdt =function(){
@@ -32,8 +32,12 @@ window.syncStruct =function(struct,text){
   crdtController.crdt.text = text;
 };
 
-window.LogRemoteInsertData =function(char, siteId){
-  return crdtController.handleRemoteInsert(char);
+window.LogRemoteInsertData =function(char){
+  crdtController.handleRemoteInsert(char);
+};
+
+window.LogRemoteDeleteData =function(char, id){
+  crdtController.handleRemoteDelete(char, id);
 };
 
 window.SendResult = function(result) {
@@ -49,6 +53,6 @@ window.SendConnections = function(connections) {
 };
 
 
-window.CallBroadcast = function(char, connections) {
-	crdtController.crdt.broadcastNew(char, parse(connections));
+window.CallBroadcast = function(char, connections, action) {
+	crdtController.crdt.broadcastNew(char, parse(connections), action);
 };
