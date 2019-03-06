@@ -112,7 +112,7 @@ window.syncStruct =function(struct,text){
 };
 
 window.LogRemoteInsertData =function(char, siteId){
-  crdtController.handleRemoteInsert(char);
+  return crdtController.handleRemoteInsert(char);
 };
 
 window.SendResult = function(result) {
@@ -213,7 +213,7 @@ class CRDT {
     const index = this.findInsertIndex(char);
     this.insertChar(index, char);
     this.insertText(char.value, index);
-
+    return this.text;  
     //this.controller.insertIntoEditor(char.value, index, char.siteId);
   }
 

@@ -102,7 +102,12 @@
                 else if(data.startsWith("Insert")) {	
                 		var connect = data.replace("Insert:","");
                 		console.log("HTML remote "+JSON.parse(connect).Insert.value);
-                		LogRemoteInsertData(JSON.parse(connect).Insert, connect);
+                        var text = LogRemoteInsertData(JSON.parse(connect).Insert, connect);
+                        canChange = false;
+                        var document = editor.getSession().getDocument(); 
+                        document.setValue(text);
+                        canChange = true;
+
                 }
                 else if(data.startsWith("GetConnections")) {
                 		var r = data.replace("GetConnections:",""); //has peer id which has requested the connections and char object
