@@ -40,7 +40,7 @@ class CRDT {
     			}
     		}
     	  if(idFound) {		//ask initiator to send all the connections
-    		  this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char}));    		
+    		this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char}));
     	  }
     	  else
     	    this.broadcast(char, connections); //will be executed if local insert is done by initiator
@@ -54,10 +54,10 @@ class CRDT {
 		  var sendTo = con.conn;
 		  if(con.id != this.siteId) {
 	        peer.on('open', function(id){		//if the connection is not between initiator and this.siteId, create new connection
-	                var c = peer.connect(con.id);
-						c.on('open', function(){
-	                        c.send("Insert:"+charJSON);
-						});
+	        		var c = peer.connect(con.id);
+				c.on('open', function(){
+					c.send("Insert:"+charJSON);
+				});
 	        });
 		  }
 		  else
