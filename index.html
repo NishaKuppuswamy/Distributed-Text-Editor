@@ -50,9 +50,7 @@
                         connect(c);
                         //Sending my peer id to the connecting id
                         connections.push({"id": peer.id, "conn":conn, "target": targetId});	//target is the initiator, peer stores only one connection (connection with target)
-                        conn.send("Data:"+peer.id);
-                        //Sending my peer id to the connecting id
-                        connections.push({"id": peer.id, "conn":conn, "target": targetId});                       
+                        conn.send("Data:"+peer.id);                       
 					});
             } 
         });
@@ -73,10 +71,10 @@
                     //(peerid,connections list, struct, version)
                     var crdt = fetchCrdt();
                     crdt = JSON.stringify(crdt);
-                    //connJSON = JSON.stringify(connections);
                     conn.send("Initial crdt:"+crdt);
-                    //conn.send("NewlineArr:"+JSON.stringify(newLineArr));
-                    //conn.send("Connection list:"+connJSON);
+                    var versionList = fetchVersion();
+                    versionList = JSON.stringify(versionList);
+                    conn.send("Initial versionList:"+versionList);
                 }
                 else if(data.startsWith("Initial crdt")){
                     var crdt = data.replace("Initial crdt:",""); 
@@ -102,7 +100,25 @@
                 else if(data.startsWith("Insert")) {	
                 		var connect = data.replace("Insert:","");
                 		console.log("HTML remote "+JSON.parse(connect).Insert.value);
-                		LogRemoteInsertData(JSON.parse(connect).Insert, connect);
+                        var text = LogRemoteInsertData(JSON.parse(connect).Insert, connect);
+                        canChange = false;
+                        var document = editor.getSession().getDocument(); 
+                        document.setValue(text);
+                        canChange = true;
+                }
+                else if(data.startsWith("Initial versionList")) {	
+                    var versionList = data.replace("Initial versionList:",""); 
+                    versionList = JSON.parse(versionList); 
+                    if(versionList!=undefined){
+                        console.log("Receiving the initial version list");
+                        console.log(versionList);
+                        //Assign it to my versionList
+                        syncVersion(versionList);
+                    }
+                    else{
+                        console.log("VersionList is undefined");
+                        console.log(versionList);
+                    }    	
                 }
                 else if(data.startsWith("GetConnections")) {
                 		var r = data.replace("GetConnections:",""); //has peer id which has requested the connections and char object

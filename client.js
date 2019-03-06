@@ -1,5 +1,9 @@
 let controller = require('./CrdtController');
 let CrdtController = controller.CrdtController;
+let list = require('./versionList');
+let VersionList = list.VersionList;
+let ver = require('./version');
+let Version = ver.Version;
 const {parse, stringify} = require('flatted/cjs');
 var crdtController;
 var r;
@@ -24,7 +28,7 @@ window.fetchCrdt =function(){
 };
 
 window.fetchVersion =function(){
-  return crdtController.crdt;
+  return crdtController.crdt.list;
 };
 
 window.syncStruct =function(struct,text){
@@ -32,8 +36,22 @@ window.syncStruct =function(struct,text){
   crdtController.crdt.text = text;
 };
 
+window.syncVersion =function(list){
+  console.log("check list");
+  console.log(list);
+  
+  //list = new VersionList(list.versions,list.localVersion);
+  const versions = list.versions.map(ver => {
+    let version = new Version(ver.siteId);
+    version.counter = ver.counter;
+    ver.unHandled.forEach(ex => version.unHandled.push(ex));
+    return version;
+  });
+  versions.forEach(version => crdtController.crdt.list.versions.push(version));
+};
+
 window.LogRemoteInsertData =function(char, siteId){
-  crdtController.handleRemoteInsert(char);
+  return crdtController.handleRemoteInsert(char);
 };
 
 window.SendResult = function(result) {

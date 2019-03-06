@@ -4,11 +4,16 @@ let Version = ver.Version;
 //List of versions for each siteID to maintain consistency and 
 //avoid duplicate operations
 class VersionList {
-   constructor(siteId) {
+  constructor(siteId) {
     this.versions = [];
     this.localVersion = new Version(siteId);
     this.versions.push(this.localVersion);
   }
+
+  /*constructor(versions,localVersion) {
+    this.versions = versions;
+    this.localVersion = localVersion;
+  }*/
 
    //Increment counter of local version for each operation
    incCounter() {

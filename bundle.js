@@ -79,6 +79,10 @@ module.exports = {
 },{"./identifier":5}],3:[function(require,module,exports){
 let controller = require('./CrdtController');
 let CrdtController = controller.CrdtController;
+let list = require('./versionList');
+let VersionList = list.VersionList;
+let ver = require('./version');
+let Version = ver.Version;
 const {parse, stringify} = require('flatted/cjs');
 var crdtController;
 var r;
@@ -103,7 +107,7 @@ window.fetchCrdt =function(){
 };
 
 window.fetchVersion =function(){
-  return crdtController.crdt;
+  return crdtController.crdt.list;
 };
 
 window.syncStruct =function(struct,text){
@@ -111,8 +115,22 @@ window.syncStruct =function(struct,text){
   crdtController.crdt.text = text;
 };
 
+window.syncVersion =function(list){
+  console.log("check list");
+  console.log(list);
+  
+  //list = new VersionList(list.versions,list.localVersion);
+  const versions = list.versions.map(ver => {
+    let version = new Version(ver.siteId);
+    version.counter = ver.counter;
+    ver.unHandled.forEach(ex => version.unHandled.push(ex));
+    return version;
+  });
+  versions.forEach(version => crdtController.crdt.list.versions.push(version));
+};
+
 window.LogRemoteInsertData =function(char, siteId){
-  crdtController.handleRemoteInsert(char);
+  return crdtController.handleRemoteInsert(char);
 };
 
 window.SendResult = function(result) {
@@ -132,7 +150,7 @@ window.CallBroadcast = function(char, connections) {
 	crdtController.crdt.broadcastNew(char, parse(connections));
 };
 
-},{"./CrdtController":1,"flatted/cjs":6}],4:[function(require,module,exports){
+},{"./CrdtController":1,"./version":7,"./versionList":8,"flatted/cjs":6}],4:[function(require,module,exports){
 let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
 let char = require('./char');
@@ -140,7 +158,6 @@ let Char = char.Char;
 //let compareTo = char.compareTo;
 let version = require('./versionList');
 let VersionList = version.VersionList;
-
 
 class CRDT {
   constructor(/*controller,*/siteId, base=32, boundary=10, strategy='random', mult=2) {
@@ -167,18 +184,19 @@ class CRDT {
     this.insertText(char.value, index);
     /* check if the local insert is done by initiator*/
     if(connections != undefined) {
-    		var idFound = false;
-    		for(let conn of connections) {
-    			if(conn.id == this.siteId) {		//local insert is not done by initiator
-    				idFound = true;				
-    				this.connectionToTarget = conn.conn; //get connection object (connection between initiator and this.siteId)
-    			}
+    	var idFound = false;
+    	for(let conn of connections) {
+    	  if(conn.id == this.siteId) {		//local insert is not done by initiator
+    			idFound = true;				
+    			this.connectionToTarget = conn.conn; //get connection object (connection between initiator and this.siteId)
     		}
-    	  if(idFound) {		//ask initiator to send all the connections
-    		  this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char}));    		
-    	  }
-    	  else
-    	    this.broadcast(char, connections); //will be executed if local insert is done by initiator
+    	}
+    	if(idFound) {		//ask initiator to send all the connections
+    		this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char}));    		
+    	}
+    	else{
+        this.broadcast(char, connections); //will be executed if local insert is done by initiator
+      }
     }
   }
   /* function to establish a new connection and broadcast the change*/
@@ -188,12 +206,12 @@ class CRDT {
 		  var peer = new Peer({key: 'api'});
 		  var sendTo = con.conn;
 		  if(con.id != this.siteId) {
-	        peer.on('open', function(id){		//if the connection is not between initiator and this.siteId, create new connection
-	                var c = peer.connect(con.id);
-						c.on('open', function(){
-	                        c.send("Insert:"+charJSON);
-						});
-	        });
+	      peer.on('open', function(id){		//if the connection is not between initiator and this.siteId, create new connection
+	        var c = peer.connect(con.id);
+					c.on('open', function(){
+	          c.send("Insert:"+charJSON);
+					});
+	      });
 		  }
 		  else
 			  this.connectionToTarget.send("Insert:"+charJSON); //use the connection established with the target, to send the change to target
@@ -209,11 +227,11 @@ class CRDT {
   }
 
   handleRemoteInsert(char) {
-	console.log("Remote ins "+char);
+	  console.log("Remote ins "+char);
     const index = this.findInsertIndex(char);
     this.insertChar(index, char);
     this.insertText(char.value, index);
-
+    return this.text;  
     //this.controller.insertIntoEditor(char.value, index, char.siteId);
   }
 
@@ -591,11 +609,16 @@ let Version = ver.Version;
 //List of versions for each siteID to maintain consistency and 
 //avoid duplicate operations
 class VersionList {
-   constructor(siteId) {
+  constructor(siteId) {
     this.versions = [];
     this.localVersion = new Version(siteId);
     this.versions.push(this.localVersion);
   }
+
+  /*constructor(versions,localVersion) {
+    this.versions = versions;
+    this.localVersion = localVersion;
+  }*/
 
    //Increment counter of local version for each operation
    incCounter() {
