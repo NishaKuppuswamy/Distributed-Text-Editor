@@ -9,14 +9,8 @@ class VersionList {
     this.localVersion = new Version(siteId);
     this.versions.push(this.localVersion);
   }
-
-  /*constructor(versions,localVersion) {
-    this.versions = versions;
-    this.localVersion = localVersion;
-  }*/
-
    //Increment counter of local version for each operation
-   incCounter() {
+  incCounter() {
     this.localVersion.counter++;
   }
   //Updating the versionlist on receiving versions from other sites 
@@ -28,7 +22,8 @@ class VersionList {
       const newVersion = new Version(inVersion.siteId);
       newVersion.updateVersion(inVersion);
       this.versions.push(newVersion);
-    } else {
+    } 
+    else {
         exists.updateVersion(inVersion);
     }
   } 

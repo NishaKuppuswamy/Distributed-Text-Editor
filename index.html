@@ -44,21 +44,21 @@
             console.log('peer id: '+peer.id);
             createController(peer.id); 
             if(targetId != 0){
-            		console.log("target not 0");
+            	console.log("target not 0");
                 var c = peer.connect(targetId);
-					c.on('open', function(){
-                        connect(c);
-                        //Sending my peer id to the connecting id
-                        connections.push({"id": peer.id, "conn":conn, "target": targetId});	//target is the initiator, peer stores only one connection (connection with target)
-                        conn.send("Data:"+peer.id);                       
-					});
+				c.on('open', function(){
+                    connect(c);
+                    //Sending my peer id to the connecting id
+                    connections.push({"id": peer.id, "conn":conn, "target": targetId});	//target is the initiator, peer stores only one connection (connection with target)
+                    conn.send("Data:"+peer.id);                   
+				});
             } 
         });
         peer.on('connection', connect);   
         function connect(c){
             conn = c
             conn.on('data',function(data){
-                console.log(data);
+                //console.log(data);
                 if(data.startsWith("Data")){
                     var incomingPeerId = data.split(":")[1];
                     // Adding the connecting peer to my list of connections
@@ -98,27 +98,38 @@
                     }                    
                 }
                 else if(data.startsWith("Insert")) {	
-                		var connect = data.replace("Insert:","");
-                		console.log("HTML remote "+JSON.parse(connect).Insert.value);
-                        var text = LogRemoteInsertData(JSON.parse(connect).Insert, connect);
-                        canChange = false;
-                        var document = editor.getSession().getDocument(); 
-                        document.setValue(text);
-                        canChange = true;
+                    var connect = data.replace("Insert:","");
+                    console.log("HTML remote "+JSON.parse(connect).Insert.value);
+                    var text = LogRemoteInsertData(JSON.parse(connect).Insert, connect);
+                    console.log("TEXT "+text);
+                    canChange = false;
+                    var document = editor.getSession().getDocument(); 
+                    document.setValue(text);
+                    canChange = true;
                 }
                 else if(data.startsWith("Initial versionList")) {	
                     var versionList = data.replace("Initial versionList:",""); 
                     versionList = JSON.parse(versionList); 
-                    if(versionList!=undefined){
+                    if(versionList!=undefined) {
                         console.log("Receiving the initial version list");
                         console.log(versionList);
                         //Assign it to my versionList
                         syncVersion(versionList);
                     }
-                    else{
+                    else {
                         console.log("VersionList is undefined");
                         console.log(versionList);
                     }    	
+                		//LogRemoteInsertData(JSON.parse(connect).Insert);
+                }
+                else if(data.startsWith("Delete")) {	
+                    var connect = data.replace("Delete:","").split(" ");
+                    console.log("HTML remote "+JSON.parse(connect[0]).Insert.value);
+                    var text = LogRemoteDeleteData(JSON.parse(connect[0]).Insert, connect[1]);
+                    canChange = false;
+                    var document = editor.getSession().getDocument(); 
+                    document.setValue(text);
+                    canChange = true;
                 }
                 else if(data.startsWith("GetConnections")) {
                 		var r = data.replace("GetConnections:",""); //has peer id which has requested the connections and char object
@@ -128,7 +139,7 @@
                 else { //called by SendConnections in order to call the broadcastNew function
                 		var splitData = data.split(" break ");
                 		var insertData = JSON.parse(splitData[0]);
-                		CallBroadcast(insertData.char, splitData[1]);
+                		CallBroadcast(insertData.char, splitData[1], insertData.action);
                 }
             });
             //conn.on('close', disconnect);
@@ -163,10 +174,10 @@
             font-family: 'Montserrat', sans-serif;
         }
 
-            body > div {
-                padding: 10px;
-                margin: auto;
-            }
+        body > div {
+            padding: 10px;
+            margin: auto;
+        }
 
         textarea {
             width: 75%;
@@ -200,27 +211,7 @@
         </p>
         
         <div id="editor"></div>  
-        
-        <!--
-        <script src="http://ace.c9.io/build/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
-            -->
-        <script>
-        
-        // var editor = ace.edit("editor");
-        // editor.setTheme("ace/theme/chrome");
-        
-        
-            // editor.getSession().on('change', function(e){
-            //     var pos = editor.selection.getCursor();
-            //     var index = editor.getSession().getDocument().positionToIndex(pos);
-            //     console.log(index+" at: "+e.lines[0]);
-            //     //e.action = 'insert';
-            //     $.get("/updateCrdt", { val: e.lines[0], index: index, action:e.action }, function (data) { });
-                
-            // });
-        </script>
 
-        <!-- <textarea id="textArea1" placeholder="start typing..."></textarea> -->
         <br>
         <br>
         <div>

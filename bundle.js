@@ -24,6 +24,11 @@ class CrdtController {
         char = new Char(char.value, char.counter, char.siteId, char.position);
         return this.crdt.handleRemoteInsert(char);
     }
+    
+    handleRemoteDelete(char, id){
+        char = new Char(char.value, char.counter, char.siteId, char.position);
+        return this.crdt.handleRemoteDelete(char, id);
+    }
 
     /*listCrdtMap() {
         console.log("listcrdt");
@@ -99,7 +104,7 @@ window.LogData =function(pos, value, action, connections){
   if(action == "insert")
   crdtController.crdt.handleLocalInsert(value, pos, connections);
   if(action == "remove")
-  crdtController.crdt.handleLocalDelete(pos);
+  crdtController.crdt.handleLocalDelete(pos, connections);
 };
 
 window.fetchCrdt =function(){
@@ -118,8 +123,6 @@ window.syncStruct =function(struct,text){
 window.syncVersion =function(list){
   console.log("check list");
   console.log(list);
-  
-  //list = new VersionList(list.versions,list.localVersion);
   const versions = list.versions.map(ver => {
     let version = new Version(ver.siteId);
     version.counter = ver.counter;
@@ -129,8 +132,12 @@ window.syncVersion =function(list){
   versions.forEach(version => crdtController.crdt.list.versions.push(version));
 };
 
-window.LogRemoteInsertData =function(char, siteId){
+window.LogRemoteInsertData =function(char){
   return crdtController.handleRemoteInsert(char);
+};
+
+window.LogRemoteDeleteData =function(char, id){
+  return crdtController.handleRemoteDelete(char, id);
 };
 
 window.SendResult = function(result) {
@@ -146,8 +153,8 @@ window.SendConnections = function(connections) {
 };
 
 
-window.CallBroadcast = function(char, connections) {
-	crdtController.crdt.broadcastNew(char, parse(connections));
+window.CallBroadcast = function(char, connections, action) {
+	crdtController.crdt.broadcastNew(char, parse(connections), action);
 };
 
 },{"./CrdtController":1,"./version":7,"./versionList":8,"flatted/cjs":6}],4:[function(require,module,exports){
@@ -189,39 +196,55 @@ class CRDT {
     	  if(conn.id == this.siteId) {		//local insert is not done by initiator
     			idFound = true;				
     			this.connectionToTarget = conn.conn; //get connection object (connection between initiator and this.siteId)
-    		}
-    	}
+        }
+      }
     	if(idFound) {		//ask initiator to send all the connections
-    		this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char}));    		
+    		this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"insert"}));
     	}
     	else{
-        this.broadcast(char, connections); //will be executed if local insert is done by initiator
+        this.broadcast(char, connections, "insert"); //will be executed if local insert is done by initiator
       }
     }
   }
   /* function to establish a new connection and broadcast the change*/
-  broadcastNew(char, connections) {
+  broadcastNew(char, connections, action) {
 	  var charJSON = JSON.stringify({Insert: char});
 	  for(let con of connections) {
+		  console.log("NEW CONNECTION ");
+		  console.log(con);
 		  var peer = new Peer({key: 'api'});
 		  var sendTo = con.conn;
 		  if(con.id != this.siteId) {
-	      peer.on('open', function(id){		//if the connection is not between initiator and this.siteId, create new connection
-	        var c = peer.connect(con.id);
-					c.on('open', function(){
-	          c.send("Insert:"+charJSON);
-					});
+	        peer.on('open', function(id){		//if the connection is not between initiator and this.siteId, create new connection
+	        	var c = peer.connect(con.id);
+				    c.on('open', function(){
+					  if(action == "insert"){
+               c.send("Insert:"+charJSON);
+            }						
+					  else {
+              c.send("Delete:"+charJSON+" "+this.siteId);
+            }						
+				  });
 	      });
 		  }
-		  else
-			  this.connectionToTarget.send("Insert:"+charJSON); //use the connection established with the target, to send the change to target
+		  else {
+			  if(action === "insert")
+				  this.connectionToTarget.send("Insert:"+charJSON); //use the connection established with the target, to send the change to target
+			  else if(action == "delete")
+				  this.connectionToTarget.send("Delete:"+charJSON); //use the connection established with the target, to send the change to target
+		  }
 	  }
   }
   /*function to broadcast the change with the existing connections */
-  broadcast(char, connections) { //will be executed if local insert is done by initiator, broadcast local insert to all of its' connections
+  broadcast(char, connections, action) { //will be executed if local insert is done by initiator, broadcast local insert to all of its' connections
 	  var charJSON = JSON.stringify({Insert: char});
 	  for(let connection of connections) {
-		  connection.conn.send("Insert:"+charJSON);
+		  console.log("CONNECTION ");
+		  console.log(connection);
+		  if(action === "insert")
+			  connection.conn.send("Insert:"+charJSON);
+		  else if(action == "delete")
+			  connection.conn.send("Delete:"+charJSON+" "+this.siteId);
 	  }
 	  //connections.forEach(c => c.conn.send("Insert:"+charJSON));
   }
@@ -245,20 +268,37 @@ class CRDT {
     console.log(this.struct);
   }
 
-  handleLocalDelete(idx) {
+  handleLocalDelete(idx, connections) {
     this.list.incCounter();
     console.log(this.list);
     const char = this.struct.splice(idx, 1)[0];
     this.deleteText(idx);
+    if(connections != undefined) {
+		var idFound = false;
+		for(let conn of connections) {
+			if(conn.id == this.siteId) {		//local insert is not done by initiator
+				idFound = true;				
+				this.connectionToTarget = conn.conn; //get connection object (connection between initiator and this.siteId)
+			}
+		}
+	  if(idFound) {		//ask initiator to send all the connections
+		this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"delete"}));
+	  }
+	  else
+	    this.broadcast(char, connections, "delete"); //will be executed if local insert is done by initiator
     //this.controller.broadcastDeletion(char);
+    }
   }
 
   handleRemoteDelete(char, siteId) {
+	  
+	console.log("In remote delete"+ char.value);
     const index = this.findIndexByPosition(char);
     this.struct.splice(index, 1);
 
     //this.controller.deleteFromEditor(char.value, index, siteId);
     this.deleteText(index);
+    return this.text;
   }
 
   findInsertIndex(char) {
@@ -614,14 +654,8 @@ class VersionList {
     this.localVersion = new Version(siteId);
     this.versions.push(this.localVersion);
   }
-
-  /*constructor(versions,localVersion) {
-    this.versions = versions;
-    this.localVersion = localVersion;
-  }*/
-
    //Increment counter of local version for each operation
-   incCounter() {
+  incCounter() {
     this.localVersion.counter++;
   }
   //Updating the versionlist on receiving versions from other sites 
@@ -633,7 +667,8 @@ class VersionList {
       const newVersion = new Version(inVersion.siteId);
       newVersion.updateVersion(inVersion);
       this.versions.push(newVersion);
-    } else {
+    } 
+    else {
         exists.updateVersion(inVersion);
     }
   } 
