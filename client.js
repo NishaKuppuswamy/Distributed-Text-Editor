@@ -37,15 +37,14 @@ window.SendResult = function(result) {
 };
 window.SendConnections = function(connections) {
 	var conn;
-	for(let c of connections) {
+	for(let c of connections) { //find connection object between initiator and the peer that has requested the connections
 		if(c.id == r.id)
 			conn = c.conn;
 	}
-	conn.send(JSON.stringify(r)+" break "+stringify(connections));
+	conn.send(JSON.stringify(r)+" break "+stringify(connections)); //use the found connection object to send connections to requested peer 
 };
 
 
 window.CallBroadcast = function(char, connections) {
-	console.log("CALIING FROM CLIENT "+parse(connections)[0].conn);
-	crdtController.crdt.broadcast(char, parse(connections));
+	crdtController.crdt.broadcastNew(char, parse(connections));
 };

@@ -16,6 +16,7 @@ class CRDT {
     this.strategy = strategy;
     this.strategyCache = [];
     this.mult = mult;
+    this.connectionToTarget = "";
   }
 
   handleLocalInsert(val, index, connections) {
@@ -24,50 +25,43 @@ class CRDT {
     const char = this.generateChar(val, index);
     this.insertChar(index, char);
     this.insertText(char.value, index);
-    console.log("in local ins "+this.siteId);
+    /* check if the local insert is done by initiator*/
     if(connections != undefined) {
     		var idFound = false;
-    		var c;
     		for(let conn of connections) {
-    			//console.log("site "+conn.id);
-    			if(conn.id == this.siteId) {
-    				//console.log("site ma"+conn.id);
-    				idFound = true;
-    				c = conn.conn;
+    			if(conn.id == this.siteId) {		//local insert is not done by initiator
+    				idFound = true;				
+    				this.connectionToTarget = onn.conn; //get connection object (connection between initiator and this.siteId)
     			}
     		}
-    //	console.log("In local connec "+connections.id);
-    	  //console.log("id found "+idFound);
-    	  if(idFound) {
+    	  if(idFound) {		//ask initiator to send all the connections
     		c.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char}));
     		
     	  }
     	  else
-    	    this.broadcast(char, connections);
+    	    this.broadcast(char, connections); //will be executed if local insert is done by initiator
     }
-    //this.controller.broadcastInsertion(char);
   }
+  /* function to establish a new connection and broadcast the change*/
   broadcastNew(char, connections) {
 	  var charJSON = JSON.stringify({Insert: char});
-	  for(let conn of connections) {
-		  console.log("calling broadcast "+conn.id+" from "+this.siteId);
-		  //to do: establish connection connect (Not working)
+	  for(let con of connections) {
 		  var peer = new Peer({key: 'api'});
-		  if(conn.id != this.siteId && conn.target != this.siteId) {
-	        peer.on('open', function(id){
-	                var c = peer.connect(conn.id);
+		  var sendTo = con.conn;
+		  if(con.id != this.siteId) {
+	        peer.on('open', function(id){		//if the connection is not between initiator and this.siteId, create new connection
+	                var c = peer.connect(con.id);
 						c.on('open', function(){
-							console.log("logingggggggggggg");
 	                        c.send("Insert:"+charJSON);
 						});
 	        });
 		  }
-		  else if(conn.id != this.siteId)
-			  conn.conn.send("Insert:"+charJSON);
+		  else
+			  this.connectionToTarget.send("Insert:"+charJSON); //use the connection established with the target, to send the change to target
 	  }
   }
-  broadcast(char, connections) {
-	  console.log("calling broadcast "+connections[1].conn);
+  /*function to broadcast the change with the existing connections */
+  broadcast(char, connections) { //will be executed if local insert is done by initiator, broadcast local insert to all of its' connections
 	  var charJSON = JSON.stringify({Insert: char});
 	  for(let connection of connections) {
 		  connection.conn.send("Insert:"+charJSON);
