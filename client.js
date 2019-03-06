@@ -33,7 +33,7 @@ window.syncStruct =function(struct,text){
 };
 
 window.LogRemoteInsertData =function(char, siteId){
-  crdtController.crdt.handleRemoteInsert(char);
+  crdtController.handleRemoteInsert(char);
 };
 
 window.SendResult = function(result) {

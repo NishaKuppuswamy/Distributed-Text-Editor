@@ -4,6 +4,8 @@
 //var LSEQArray = require('lseqarray');
 let crdtLinear = require('./crdtLinear');
 let CRDT = crdtLinear.CRDT;
+let char = require('./char');
+let Char = char.Char;
 
 class CrdtController {
     constructor(siteID) {
@@ -17,7 +19,7 @@ class CrdtController {
         if(action == "remove")
         this.crdt.handleLocalDelete(value);
     }
-    
+
     handleRemoteInsert(char){
         char = new Char(char.value, char.counter, char.siteId, char.position);
         return this.crdt.handleRemoteInsert(char);
@@ -34,7 +36,7 @@ class CrdtController {
 module.exports = {
     CrdtController: CrdtController
 }
-},{"./crdtLinear":4}],2:[function(require,module,exports){
+},{"./char":2,"./crdtLinear":4}],2:[function(require,module,exports){
 let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
 
@@ -110,7 +112,7 @@ window.syncStruct =function(struct,text){
 };
 
 window.LogRemoteInsertData =function(char, siteId){
-  crdtController.crdt.handleRemoteInsert(char);
+  crdtController.handleRemoteInsert(char);
 };
 
 window.SendResult = function(result) {
