@@ -8,9 +8,9 @@ let char = require('./char');
 let Char = char.Char;
 
 class CrdtController {
-    constructor(siteID) {
+    constructor(siteID, targetId) {
         this.siteID = siteID;
-        this.crdt = new CRDT(siteID);
+        this.crdt = new CRDT(siteID, targetId);
     }
 
     processCrdt(pos, value, action) {
@@ -40,6 +40,7 @@ class CrdtController {
 
 module.exports = {
     CrdtController: CrdtController
+>>>>>>> maintain connections in a map
 }
 },{"./char":2,"./crdtLinear":4}],2:[function(require,module,exports){
 let identifier = require('./identifier');
@@ -95,9 +96,9 @@ window.getURL =function(){
   document.getElementById('url').innerHTML = "http://localhost:3000/shared?id="+crdtController.siteID;
 };
 
-window.createController =function(siteID){
+window.createController =function(siteID, targetId){
   console.log("created controller");
-  crdtController = new CrdtController(siteID);
+  crdtController = new CrdtController(siteID, targetId);
 };
 
 window.LogData =function(pos, value, action, connections){
@@ -145,16 +146,14 @@ window.SendResult = function(result) {
 };
 window.SendConnections = function(connections) {
 	var conn;
-	for(let c of connections) { //find connection object between initiator and the peer that has requested the connections
-		if(c.id == r.id)
-			conn = c.conn;
-	}
-	conn.send(JSON.stringify(r)+" break "+stringify(connections)); //use the found connection object to send connections to requested peer 
+	console.log("SEND");
+	console.log(connections);
+	 //use the found connection object to send connections to requested peer 
 };
 
 
-window.CallBroadcast = function(char, connections, action) {
-	crdtController.crdt.broadcastNew(char, parse(connections), action);
+window.CallBroadcast = function(char, connections, action, peer) {
+	crdtController.crdt.broadcastNew(char, parse(connections), action, peer);
 };
 
 },{"./CrdtController":1,"./version":7,"./versionList":8,"flatted/cjs":6}],4:[function(require,module,exports){
@@ -167,7 +166,7 @@ let version = require('./versionList');
 let VersionList = version.VersionList;
 
 class CRDT {
-  constructor(/*controller,*/siteId, base=32, boundary=10, strategy='random', mult=2) {
+  constructor(/*controller,*/siteId, targetId, base=32, boundary=10, strategy='random', mult=2) {
     //this.controller = controller;
     //this.vector = controller.vector;    
     this.list = new VersionList(siteId);
@@ -180,6 +179,7 @@ class CRDT {
     this.strategyCache = [];
     this.mult = mult;
     this.connectionToTarget = "";
+    this.initiatorId = targetId;
   }
 
   handleLocalInsert(val, index, connections) {
@@ -191,41 +191,31 @@ class CRDT {
     this.insertText(char.value, index);
     /* check if the local insert is done by initiator*/
     if(connections != undefined) {
-    	var idFound = false;
-    	for(let conn of connections) {
-    	  if(conn.id == this.siteId) {		//local insert is not done by initiator
-    			idFound = true;				
-    			this.connectionToTarget = conn.conn; //get connection object (connection between initiator and this.siteId)
-        }
-      }
-    	if(idFound) {		//ask initiator to send all the connections
-    		this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"insert"}));
-    	}
-    	else{
-        this.broadcast(char, connections, "insert"); //will be executed if local insert is done by initiator
-      }
+    		var idFound = false;
+    		if(connections[this.initiatorId] != null)
+    		  connections[this.initiatorId].send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"insert"}));
+    		else
+    			this.broadcast(char, connections, "insert"); //will be executed if local insert is done by initiator
     }
   }
   /* function to establish a new connection and broadcast the change*/
-  broadcastNew(char, connections, action) {
+  broadcastNew(char, connections, action, peer) {
 	  var charJSON = JSON.stringify({Insert: char});
 	  for(let con of connections) {
 		  console.log("NEW CONNECTION ");
 		  console.log(con);
-		  var peer = new Peer({key: 'api'});
 		  var sendTo = con.conn;
 		  if(con.id != this.siteId) {
+			  var c = peer.connect(con.id);
 	        peer.on('open', function(id){		//if the connection is not between initiator and this.siteId, create new connection
-	        	var c = peer.connect(con.id);
-				    c.on('open', function(){
-					  if(action == "insert"){
-               c.send("Insert:"+charJSON);
-            }						
-					  else {
-              c.send("Delete:"+charJSON+" "+this.siteId);
-            }						
-				  });
-	      });
+				c.on('open', function(){
+					if(action == "insert")
+						c.send("Insert:"+charJSON);
+					else 
+						c.send("Delete:"+charJSON+" "+this.siteId);
+				});
+	        });
+	        peer.on('connection', connect); 
 		  }
 		  else {
 			  if(action === "insert")
@@ -238,13 +228,11 @@ class CRDT {
   /*function to broadcast the change with the existing connections */
   broadcast(char, connections, action) { //will be executed if local insert is done by initiator, broadcast local insert to all of its' connections
 	  var charJSON = JSON.stringify({Insert: char});
-	  for(let connection of connections) {
-		  console.log("CONNECTION ");
-		  console.log(connection);
+	  for(var peerId in connections) {
 		  if(action === "insert")
-			  connection.conn.send("Insert:"+charJSON);
+			  connections[peerId].send("Insert:"+charJSON);
 		  else if(action == "delete")
-			  connection.conn.send("Delete:"+charJSON+" "+this.siteId);
+			  connections[peerId].send("Delete:"+charJSON+" "+this.siteId);
 	  }
 	  //connections.forEach(c => c.conn.send("Insert:"+charJSON));
   }
@@ -274,19 +262,10 @@ class CRDT {
     const char = this.struct.splice(idx, 1)[0];
     this.deleteText(idx);
     if(connections != undefined) {
-		var idFound = false;
-		for(let conn of connections) {
-			if(conn.id == this.siteId) {		//local insert is not done by initiator
-				idFound = true;				
-				this.connectionToTarget = conn.conn; //get connection object (connection between initiator and this.siteId)
-			}
-		}
-	  if(idFound) {		//ask initiator to send all the connections
-		this.connectionToTarget.send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"delete"}));
-	  }
+	  if(connections[this.initiatorId] != null)
+	    connections[this.initiatorId].send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"delete"}));
 	  else
-	    this.broadcast(char, connections, "delete"); //will be executed if local insert is done by initiator
-    //this.controller.broadcastDeletion(char);
+		this.broadcast(char, connections, "delete"); //will be executed if local insert is done by initiator
     }
   }
 

@@ -11,9 +11,9 @@ window.getURL =function(){
   document.getElementById('url').innerHTML = "http://localhost:3000/shared?id="+crdtController.siteID;
 };
 
-window.createController =function(siteID){
+window.createController =function(siteID, targetId){
   console.log("created controller");
-  crdtController = new CrdtController(siteID);
+  crdtController = new CrdtController(siteID, targetId);
 };
 
 window.LogData =function(pos, value, action, connections){
@@ -61,14 +61,12 @@ window.SendResult = function(result) {
 };
 window.SendConnections = function(connections) {
 	var conn;
-	for(let c of connections) { //find connection object between initiator and the peer that has requested the connections
-		if(c.id == r.id)
-			conn = c.conn;
-	}
-	conn.send(JSON.stringify(r)+" break "+stringify(connections)); //use the found connection object to send connections to requested peer 
+	console.log("SEND");
+	console.log(connections);
+	 //use the found connection object to send connections to requested peer 
 };
 
 
-window.CallBroadcast = function(char, connections, action) {
-	crdtController.crdt.broadcastNew(char, parse(connections), action);
+window.CallBroadcast = function(char, connections, action, peer) {
+	crdtController.crdt.broadcastNew(char, parse(connections), action, peer);
 };

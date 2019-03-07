@@ -7,9 +7,9 @@ let char = require('./char');
 let Char = char.Char;
 
 class CrdtController {
-    constructor(siteID) {
+    constructor(siteID, targetId) {
         this.siteID = siteID;
-        this.crdt = new CRDT(siteID);
+        this.crdt = new CRDT(siteID, targetId);
     }
 
     processCrdt(pos, value, action) {
