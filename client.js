@@ -56,7 +56,15 @@ window.LogRemoteDeleteData =function(char, id){
   return crdtController.handleRemoteDelete(char, id);
 };
 
-window.SendResult = function(result) {
+window.SendConnections = function(peerId, connObj){
+  connObj.send("Sending new connection:"+peerId);
+}
+
+/*window.ParseConnection = function(connObj){
+  return parse(connObj);
+}*/
+
+/*window.SendResult = function(result) {
 	r = JSON.parse(result);
 };
 window.SendConnections = function(connections) {
@@ -69,4 +77,4 @@ window.SendConnections = function(connections) {
 
 window.CallBroadcast = function(char, connections, action, peer) {
 	crdtController.crdt.broadcastNew(char, parse(connections), action, peer);
-};
+};*/

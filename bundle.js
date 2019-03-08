@@ -40,7 +40,6 @@ class CrdtController {
 
 module.exports = {
     CrdtController: CrdtController
->>>>>>> maintain connections in a map
 }
 },{"./char":2,"./crdtLinear":4}],2:[function(require,module,exports){
 let identifier = require('./identifier');
@@ -141,7 +140,15 @@ window.LogRemoteDeleteData =function(char, id){
   return crdtController.handleRemoteDelete(char, id);
 };
 
-window.SendResult = function(result) {
+window.SendConnections = function(peerId, connObj){
+  connObj.send("Sending new connection:"+peerId);
+}
+
+/*window.ParseConnection = function(connObj){
+  return parse(connObj);
+}*/
+
+/*window.SendResult = function(result) {
 	r = JSON.parse(result);
 };
 window.SendConnections = function(connections) {
@@ -154,7 +161,7 @@ window.SendConnections = function(connections) {
 
 window.CallBroadcast = function(char, connections, action, peer) {
 	crdtController.crdt.broadcastNew(char, parse(connections), action, peer);
-};
+};*/
 
 },{"./CrdtController":1,"./version":7,"./versionList":8,"flatted/cjs":6}],4:[function(require,module,exports){
 let identifier = require('./identifier');
@@ -190,16 +197,16 @@ class CRDT {
     this.insertChar(index, char);
     this.insertText(char.value, index);
     /* check if the local insert is done by initiator*/
-    if(connections != undefined) {
+    /*if(connections != undefined) {
     		var idFound = false;
     		if(connections[this.initiatorId] != null)
     		  connections[this.initiatorId].send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"insert"}));
-    		else
-    			this.broadcast(char, connections, "insert"); //will be executed if local insert is done by initiator
-    }
+    		else*/
+    this.broadcast(char, connections, "insert"); //will be executed if local insert is done by initiator
+    //}
   }
   /* function to establish a new connection and broadcast the change*/
-  broadcastNew(char, connections, action, peer) {
+  /*broadcastNew(char, connections, action, peer) {
 	  var charJSON = JSON.stringify({Insert: char});
 	  for(let con of connections) {
 		  console.log("NEW CONNECTION ");
@@ -224,15 +231,19 @@ class CRDT {
 				  this.connectionToTarget.send("Delete:"+charJSON); //use the connection established with the target, to send the change to target
 		  }
 	  }
-  }
+  }*/
+
   /*function to broadcast the change with the existing connections */
   broadcast(char, connections, action) { //will be executed if local insert is done by initiator, broadcast local insert to all of its' connections
-	  var charJSON = JSON.stringify({Insert: char});
+    var charJSON = JSON.stringify({Insert: char});    
 	  for(var peerId in connections) {
-		  if(action === "insert")
-			  connections[peerId].send("Insert:"+charJSON);
-		  else if(action == "delete")
-			  connections[peerId].send("Delete:"+charJSON+" "+this.siteId);
+      console.log("Broadcasting to connections"+peerId);
+		  if(action === "insert"){
+        connections[peerId].send("Insert:"+charJSON);
+      }			  
+		  else if(action == "delete"){
+        connections[peerId].send("Delete:"+charJSON+" "+this.siteId);
+      }			  
 	  }
 	  //connections.forEach(c => c.conn.send("Insert:"+charJSON));
   }
@@ -261,12 +272,12 @@ class CRDT {
     console.log(this.list);
     const char = this.struct.splice(idx, 1)[0];
     this.deleteText(idx);
-    if(connections != undefined) {
+    /*if(connections != undefined) {
 	  if(connections[this.initiatorId] != null)
 	    connections[this.initiatorId].send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"delete"}));
-	  else
+	  else*/
 		this.broadcast(char, connections, "delete"); //will be executed if local insert is done by initiator
-    }
+    //}
   }
 
   handleRemoteDelete(char, siteId) {

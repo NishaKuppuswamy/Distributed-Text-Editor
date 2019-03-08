@@ -47,10 +47,12 @@
             	console.log("target not 0");
                 var c = peer.connect(targetId);
 					c.on('open', function(){
-                        connect(c);
-                        //Sending my peer id to the connecting id
-                        if(connections[targetId] == null)
-                        		connections[targetId] = conn;	//target is the initiator, peer stores only one connection (connection with target)
+                        connect(c);                        
+                        if(connections[targetId] == null){
+                            //target is the initiator, peer stores only one connection (connection with target)
+                            connections[targetId] = conn;
+                        }  
+                        //Sending my peer id to the connecting id                     		
                         conn.send("Data:"+peer.id);                   
 					});
             } 
@@ -60,15 +62,24 @@
             conn = c;
             conn.on('data',function(data){
                 //console.log(data);
-                if(data.startsWith("Data")){
-                		
+                if(data.startsWith("Data")){                		
                     var incomingPeerId = data.split(":")[1];
-                    // Adding the connecting peer to my list of connections
-                    if(connections != undefined || !connections.id.includes(incomingPeerId)){
-                        console.log("log incom id "+incomingPeerId);
-                        if(connections[incomingPeerId] == null)
-                        		connections[incomingPeerId] = conn;	//target is the initiator, initiator stores all the connections
+                    // Adding the connecting peer to initiator list of connections
+                    if(connections != undefined){
+                        console.log("log incoming id "+incomingPeerId);
+                        if(connections[incomingPeerId] == null){
+                            //target is the initiator, initiator stores all the connections
+                            connections[incomingPeerId] = conn;	
+                        }
+                        console.log("List of connections in initiator");
                         console.log(connections);
+                        //Sending the newly added connection to all the other connections in network 
+                        for(let con of Object.keys(connections)){
+	                        if(con!=incomingPeerId){
+                                console.log("Sending "+incomingPeerId+"to the peer "+con);
+		                        connections[con].send("SyncConnect:"+incomingPeerId);
+	                        }
+                        }
                     }
                     //Sending my current existing objects to the connecting peer id
                     //(peerid,connections list, struct, version)
@@ -134,12 +145,41 @@
                     document.setValue(text);
                     canChange = true;
                 }
-                else if(data.startsWith("GetConnections")) {
+                /*else if(data.startsWith("GetConnections")) {
                 		var r = data.replace("GetConnections:",""); //has peer id which has requested the connections and char object
                 		//SendResult(r);
                 		var receiver = connections[JSON.parse(r).id];
                 		receiver.send(r+" break "+JSON.stringify(Object.keys(connections)));
                 		//SendConnections(JSON.strObject.keys(connections));
+                }*/
+                else if(data.startsWith("SyncConnect")){                    
+                    console.log("Going to sync my connections");
+                    var idToConnect = data.split(":")[1];
+                    //Adding the recieved new peerid to my connections
+                    if(connections[idToConnect] == null) {
+                        var c = peer.connect(idToConnect);
+                        c.on('open', function(){
+                            connections[idToConnect] = c;
+                            console.log("Updated connection list of the peer "+peer.id);
+                            console.log(c);
+                            SendConnections(peer.id,c)
+                            //connections[idToConnect].send("Sending new connection:"+peer.id);
+                        });
+		  			}
+                }
+                else if(data.startsWith("Sending new connection")){                    
+                    console.log("Adding the newest connection");
+                    //var data = data.replace("Sending new connection","");
+                    //var splitData = data.split(" break ");
+                    var peerId = data.split(":")[1];;
+                    //var connObj = ParseConnection(splitData[1]);
+                    if(connections[peerId]==null){
+                        console.log("connObj");
+                        console.log(conn);
+                        connections[peerId] = conn;
+                    }      
+                    console.log("New connection list[2]");
+                    console.log(connections);              
                 }
                 else { //called by SendConnections in order to call the broadcastNew function
                 		var splitData = data.split(" break ");

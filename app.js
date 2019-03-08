@@ -1,9 +1,6 @@
 var express = require('express');
 var app = express();
 const path = require('path');  
-let controller = require('./CrdtController');
-let CrdtController = controller.CrdtController;
-var crdtController;
 var ExpressPeerServer = require('peer').ExpressPeerServer;
 
 app.use(express.static(__dirname)); 
@@ -14,12 +11,7 @@ app.get('/', function (req, res) {
 
 app.get('/shared', function (req, res) {
     //console.log(req.query.id);
-    res.sendFile('/index.html', { root: __dirname })
-    
-});
-
-app.get('/listCRDT', function (req, res) {
-    crdtController.listCrdtMap();
+    res.sendFile('/index.html', { root: __dirname })    
 });
 
 var server = app.listen(3000, function () { });
