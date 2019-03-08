@@ -140,29 +140,6 @@ window.LogRemoteDeleteData =function(char, id){
   return crdtController.handleRemoteDelete(char, id);
 };
 
-window.SendConnections = function(peerId, connObj){
-  connObj.send("Sending new connection:"+peerId);
-}
-
-/*window.ParseConnection = function(connObj){
-  return parse(connObj);
-}*/
-
-/*window.SendResult = function(result) {
-	r = JSON.parse(result);
-};
-window.SendConnections = function(connections) {
-	var conn;
-	console.log("SEND");
-	console.log(connections);
-	 //use the found connection object to send connections to requested peer 
-};
-
-
-window.CallBroadcast = function(char, connections, action, peer) {
-	crdtController.crdt.broadcastNew(char, parse(connections), action, peer);
-};*/
-
 },{"./CrdtController":1,"./version":7,"./versionList":8,"flatted/cjs":6}],4:[function(require,module,exports){
 let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
@@ -174,11 +151,10 @@ let VersionList = version.VersionList;
 
 class CRDT {
   constructor(/*controller,*/siteId, targetId, base=32, boundary=10, strategy='random', mult=2) {
-    //this.controller = controller;
-    //this.vector = controller.vector;    
+    //this.controller = controller;  
     this.list = new VersionList(siteId);
     this.struct = [];
-    this.siteId = siteId;//controller.siteID;
+    this.siteId = siteId;
     this.text = "";
     this.base = base;
     this.boundary = boundary;
@@ -196,45 +172,12 @@ class CRDT {
     const char = this.generateChar(val, index);
     this.insertChar(index, char);
     this.insertText(char.value, index);
-    /* check if the local insert is done by initiator*/
-    /*if(connections != undefined) {
-    		var idFound = false;
-    		if(connections[this.initiatorId] != null)
-    		  connections[this.initiatorId].send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"insert"}));
-    		else*/
+    //Broadcast the insert to all my coonections
     this.broadcast(char, connections, "insert"); //will be executed if local insert is done by initiator
-    //}
   }
-  /* function to establish a new connection and broadcast the change*/
-  /*broadcastNew(char, connections, action, peer) {
-	  var charJSON = JSON.stringify({Insert: char});
-	  for(let con of connections) {
-		  console.log("NEW CONNECTION ");
-		  console.log(con);
-		  var sendTo = con.conn;
-		  if(con.id != this.siteId) {
-			  var c = peer.connect(con.id);
-	        peer.on('open', function(id){		//if the connection is not between initiator and this.siteId, create new connection
-				c.on('open', function(){
-					if(action == "insert")
-						c.send("Insert:"+charJSON);
-					else 
-						c.send("Delete:"+charJSON+" "+this.siteId);
-				});
-	        });
-	        peer.on('connection', connect); 
-		  }
-		  else {
-			  if(action === "insert")
-				  this.connectionToTarget.send("Insert:"+charJSON); //use the connection established with the target, to send the change to target
-			  else if(action == "delete")
-				  this.connectionToTarget.send("Delete:"+charJSON); //use the connection established with the target, to send the change to target
-		  }
-	  }
-  }*/
-
-  /*function to broadcast the change with the existing connections */
-  broadcast(char, connections, action) { //will be executed if local insert is done by initiator, broadcast local insert to all of its' connections
+  
+  /*function to broadcast the change with all the existing connections */
+  broadcast(char, connections, action) {
     var charJSON = JSON.stringify({Insert: char});    
 	  for(var peerId in connections) {
       console.log("Broadcasting to connections"+peerId);
@@ -245,7 +188,6 @@ class CRDT {
         connections[peerId].send("Delete:"+charJSON+" "+this.siteId);
       }			  
 	  }
-	  //connections.forEach(c => c.conn.send("Insert:"+charJSON));
   }
 
   handleRemoteInsert(char) {
@@ -253,8 +195,7 @@ class CRDT {
     const index = this.findInsertIndex(char);
     this.insertChar(index, char);
     this.insertText(char.value, index);
-    return this.text;  
-    //this.controller.insertIntoEditor(char.value, index, char.siteId);
+    return this.text;
   }
 
   generateText() {
@@ -272,21 +213,14 @@ class CRDT {
     console.log(this.list);
     const char = this.struct.splice(idx, 1)[0];
     this.deleteText(idx);
-    /*if(connections != undefined) {
-	  if(connections[this.initiatorId] != null)
-	    connections[this.initiatorId].send("GetConnections:"+JSON.stringify({'id':this.siteId, 'char':char, 'action':"delete"}));
-	  else*/
-		this.broadcast(char, connections, "delete"); //will be executed if local insert is done by initiator
-    //}
+    //Broadcast the delete operation to all the connections
+    this.broadcast(char, connections, "delete"); 
   }
 
-  handleRemoteDelete(char, siteId) {
-	  
-	console.log("In remote delete"+ char.value);
+  handleRemoteDelete(char, siteId) {	  
+	  console.log("In remote delete"+ char.value);
     const index = this.findIndexByPosition(char);
     this.struct.splice(index, 1);
-
-    //this.controller.deleteFromEditor(char.value, index, siteId);
     this.deleteText(index);
     return this.text;
   }
