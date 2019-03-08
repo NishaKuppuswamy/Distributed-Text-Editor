@@ -185,7 +185,7 @@ class CRDT {
         connections[peerId].send("Insert:"+charJSON);
       }			  
 		  else if(action == "delete"){
-        connections[peerId].send("Delete:"+charJSON+" "+this.siteId);
+        connections[peerId].send("Delete:"+charJSON+"break"+this.siteId);
       }			  
 	  }
   }
@@ -222,6 +222,7 @@ class CRDT {
     const index = this.findIndexByPosition(char);
     this.struct.splice(index, 1);
     this.deleteText(index);
+    console.log("Deleting This.text "+this.text);
     return this.text;
   }
 
