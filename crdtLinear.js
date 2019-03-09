@@ -42,7 +42,7 @@ class CRDT {
         connections[peerId].send("Insert:"+charJSON);
       }			  
 		  else if(action == "delete"){
-        connections[peerId].send("Delete:"+charJSON+" "+this.siteId);
+        connections[peerId].send("Delete:"+charJSON+"break"+this.siteId);
       }			  
 	  }
   }

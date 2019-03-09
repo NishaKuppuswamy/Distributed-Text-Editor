@@ -29,7 +29,8 @@
                 }
            }
         var editor = ace.edit("editor");
-        editor.setTheme("ace/theme/chrome");        
+        editor.setTheme("ace/theme/chrome");  
+ 		editor.session.setOptions({tabSize: 1});      
         editor.getSession().on('change', function(e){
             if(canChange){
                  var pos = editor.selection.getCursor();
@@ -134,7 +135,7 @@
                     } 
                 }
                 else if(data.startsWith("Delete")) {	
-                    var connect = data.replace("Delete:","").split(" ");
+                    var connect = data.replace("Delete:","").split("break");
                     console.log("HTML remote "+JSON.parse(connect[0]).Insert.value);
                     var text = LogRemoteDeleteData(JSON.parse(connect[0]).Insert, connect[1]);
                     canChange = false;
