@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
     <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script> -->
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
     <script src="http://ace.c9.io/build/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/peerjs@0.3.20/dist/peer.min.js"></script>
@@ -171,6 +172,9 @@
                     console.log("New connection list");
                     console.log(connections);              
                 }
+                else{
+                    console.log("recv remove commands"); 
+                }
             });
             //conn.on('close', disconnect);
         }
@@ -184,6 +188,11 @@
         
         $('#share').on("click", function () {
             getURL();
+        });
+        $(window).on("beforeunload", function() { 
+            peer.destroy();
+            var io = io();
+            io.emit('end');
         });
     });
         
@@ -226,28 +235,73 @@
 </head>
 
 <body>
-    <div>
-
-        <h1>Distributed Text Editor</h1>
-        <hr>
-        <div class="hide" id="conclave">
-                <div class="text-wrapper">
-                    <div class="editor">
-                        <div class="header"><button id="share">Share URL</button>
-                            <div id="url"></div>
-        <!-- <textarea id = "id1"></textarea> --> </div></div></div></div>
-        <p>
-            <i>Decentralized Real-Time Collaborative Editor using CRDT</i>
-        </p>
-        
-        <div id="editor"></div>  
-
-        <br>
-        <br>
-        <div>
+    <div class="parent">
+            <h1>Distributed Text Editor</h1>
+            <hr>
+            <button id="disconnect">Disconnect</button>
+            <button id="share">Share URL</button>
+            <div id="url"></div>
             
-    </div>
+            
+        <div class="left">
+            <p>
+                <i>Decentralized Real-Time Collaborative Editor using CRDT</i>
+            </p>
+            <div id="editor"></div>  
+
+            <br>
+            <br>
+            
         </div>
+        <div class="right">
+                <form id="chat" method="post" action="#">
+                <p>
+                        <i>Chat</i>
+                    </p>
+                    <label for="name">Name</label>
+                    <input type="text" class ="validate" name="name" id="name" />
+                <div id="history"></div>
+                
+                    <input type="text" id="msg_text" class = "send" name="msg_text" />
+                    <input type="submit" value="Send!" />
+                </form>
+                <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+                <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+                <script type="text/javascript">
+               
+                    var socket = io.connect();
+                    $('input[type="submit"]').prop('disabled', true); 
+                    $( "#msg_text" ).focus(function() {
+                        if($( "#name" ).val() == ""){
+                            $('.validate').css({ "border": '#FF0000 1px solid'}); 
+                            $('input[type="submit"]').prop('disabled', true); 
+                        }
+                    });
+
+                    $( "#msg_text" ).keypress(function() {
+                        if($( "#msg_text" ).val() != ""){
+                            $('input[type="submit"]').prop('disabled', false); 
+                        }
+                    });
+                    $( "#msg_text" ).keydown(function() {
+                        if($( "#msg_text" ).val() == ""){
+                            $('input[type="submit"]').prop('disabled', true); 
+                        }
+                    });
+                    $("form#chat").submit(function(e) {
+                        e.preventDefault();
+                        socket.emit("send message", $( "#name" ).val()+":"+$(this).find("#msg_text").val(), function() {
+                            $("form#chat #msg_text").val("");
+                        });
+                    });
+                    
+                    socket.on("update messages", function(msg){
+                    var final_message = $("<p />").text(msg);
+                    $("#history").append(final_message);
+                    });
+                </script>
+            </div> 
+    </div>   
 </body>
 
 </html>

@@ -36,6 +36,10 @@ class CrdtController {
             console.log(codt.pos + ":" + crdt.val);
         })
     }*/
+
+    testsend(connections){
+        this.crdt.testsend(connections);
+    }
 }
 
 module.exports = {
@@ -140,6 +144,10 @@ window.LogRemoteDeleteData =function(char, id){
   return crdtController.handleRemoteDelete(char, id);
 };
 
+window.testsend =function(connections){
+  crdtController.testsend(connections);
+};
+
 },{"./CrdtController":1,"./version":7,"./versionList":8,"flatted/cjs":6}],4:[function(require,module,exports){
 let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
@@ -182,6 +190,7 @@ class CRDT {
 	  for(var peerId in connections) {
       console.log("Broadcasting to connections"+peerId);
 		  if(action === "insert"){
+        console.log("Local Insert:: "+peerId+"-->"+connections[peerId].peerConnection.signalingState);
         connections[peerId].send("Insert:"+charJSON);
       }			  
 		  else if(action == "delete"){
@@ -378,6 +387,15 @@ class CRDT {
     console.log("Deleting char");
     console.log(this.struct);  
     console.log(this.text); 
+  }
+
+  testsend(connections){
+    for(var peerId in connections) {
+      setTimeout(function() {
+        console.log("Sending "+peerId+"to the peer ");
+        connections[peerId].send("Delete Conn:"+this.siteId);
+       }, 5000);  
+    }
   }
 }
 
