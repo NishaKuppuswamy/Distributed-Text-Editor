@@ -222,7 +222,6 @@ class CRDT {
     const index = this.findIndexByPosition(char);
     this.struct.splice(index, 1);
     this.deleteText(index);
-    console.log("Deleting This.text "+this.text);
     return this.text;
   }
 
