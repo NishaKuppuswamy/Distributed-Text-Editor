@@ -181,6 +181,10 @@ class CRDT {
     var charJSON = JSON.stringify({Insert: char});    
 	  for(var peerId in connections) {
       console.log("Broadcasting to connections"+peerId);
+      if(connections[peerId].peerConnection.signalingState == "closed") {
+		  delete connections[peerId];
+		  continue;
+	  }
 		  if(action === "insert"){
         connections[peerId].send("Insert:"+charJSON);
       }			  
