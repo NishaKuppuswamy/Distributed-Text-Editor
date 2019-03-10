@@ -14,19 +14,19 @@ class CrdtController {
 
     processCrdt(pos, value, action) {
         if(action == "insert")
-        this.crdt.handleLocalInsert(value, pos);
+        this.crdt.localInsert(value, pos);
         if(action == "remove")
-        this.crdt.handleLocalDelete(value);
+        this.crdt.localDelete(value);
     }
 
-    handleRemoteInsert(char){
+    remoteInsert(char){
         char = new Char(char.peerId, char.value, char.counter, char.position);
-        return this.crdt.handleRemoteInsert(char);
+        return this.crdt.remoteInsert(char);
     }
     
-    handleRemoteDelete(char, id){
+    remoteDelete(char, id){
         char = new Char(char.peerId, char.value, char.counter, char.position);
-        return this.crdt.handleRemoteDelete(char, id);
+        return this.crdt.remoteDelete(char, id);
     }
 }
 

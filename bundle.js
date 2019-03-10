@@ -15,19 +15,19 @@ class CrdtController {
 
     processCrdt(pos, value, action) {
         if(action == "insert")
-        this.crdt.handleLocalInsert(value, pos);
+        this.crdt.localInsert(value, pos);
         if(action == "remove")
-        this.crdt.handleLocalDelete(value);
+        this.crdt.localDelete(value);
     }
 
-    handleRemoteInsert(char){
+    remoteInsert(char){
         char = new Char(char.peerId, char.value, char.counter, char.position);
-        return this.crdt.handleRemoteInsert(char);
+        return this.crdt.remoteInsert(char);
     }
     
-    handleRemoteDelete(char, id){
+    remoteDelete(char, id){
         char = new Char(char.peerId, char.value, char.counter, char.position);
-        return this.crdt.handleRemoteDelete(char, id);
+        return this.crdt.remoteDelete(char, id);
     }
 }
 
@@ -99,9 +99,9 @@ window.createController =function(peerId, targetId){
 
 window.LogData =function(pos, value, action, connections){
   if(action == "insert")
-  crdtController.crdt.handleLocalInsert(value, pos, connections);
+  crdtController.crdt.localInsert(value, pos, connections);
   if(action == "remove")
-  crdtController.crdt.handleLocalDelete(pos, connections);
+  crdtController.crdt.localDelete(pos, connections);
 };
 
 window.fetchCrdt =function(){
@@ -114,11 +114,11 @@ window.syncStruct =function(struct,text){
 };
 
 window.LogRemoteInsertData =function(char){
-  return crdtController.handleRemoteInsert(char);
+  return crdtController.remoteInsert(char);
 };
 
 window.LogRemoteDeleteData =function(char, id){
-  return crdtController.handleRemoteDelete(char, id);
+  return crdtController.remoteDelete(char, id);
 };
 
 },{"./CrdtController":1,"flatted/cjs":6}],4:[function(require,module,exports){
@@ -130,8 +130,7 @@ let version = require('./versionList');
 let VersionList = version.VersionList;
 
 class CRDT {
-  constructor(/*controller,*/peerId, targetId, base=32, boundary=10, strategy='random', mult=2) {
-    //this.controller = controller;  
+  constructor(peerId, targetId, base=32, boundary=10, strategy='random', mult=2) { 
     this.list = new VersionList(peerId);
     this.struct = [];
     this.peerId = peerId;
@@ -145,13 +144,13 @@ class CRDT {
     this.initiatorId = targetId;
   }
 
-  handleLocalInsert(val, index, connections) {
+  localInsert(val, index, connections) {
     this.list.incCounter();
     console.log(this.list);
     //console.log(val);      
-    const char = this.generateChar(val, index);
-    this.insertChar(index, char);
-    this.insertText(char.value, index);
+    const char = this.createChar(val, index);
+    this.struct.splice(index, 0, char);
+    this.insertChar(char.value, index);
     //Broadcast the insert to all my coonections
     this.broadcast(char, connections, "insert"); //will be executed if local insert is done by initiator
   }
@@ -160,52 +159,42 @@ class CRDT {
   broadcast(char, connections, action) {
     var charJSON = JSON.stringify({Insert: char});    
 	  for(var peerId in connections) {
-      console.log("Broadcasting to connections"+peerId);
-      if(connections[peerId].peerConnection.signalingState == "closed") {
+        console.log("Broadcasting to connections"+peerId);
+        if(connections[peerId].peerConnection.signalingState == "closed") {
 		  delete connections[peerId];
 		  continue;
-	  }
-		  if(action === "insert"){
-        connections[peerId].send("Insert:"+charJSON);
-      }			  
-		  else if(action == "delete"){
-        connections[peerId].send("Delete:"+charJSON+"break"+this.peerId);
-      }			  
+	    }
+        if(action === "insert"){
+          connections[peerId].send("Insert:"+charJSON);
+        }			  
+        else if(action == "delete"){
+          connections[peerId].send("Delete:"+charJSON+"break"+this.peerId);
+        }			  
 	  }
   }
 
-  handleRemoteInsert(char) {
+  remoteInsert(char) {
 	  console.log("Remote ins "+char);
     const index = this.findInsertIndex(char);
-    this.insertChar(index, char);
-    this.insertText(char.value, index);
+    this.struct.splice(index, 0, char);
+    this.insertChar(char.value, index);
     return this.text;
   }
 
-  generateText() {
-    return this.struct.map(char => char.value).join('');
-  }
-
-  insertChar(index, char) {
-    console.log("Inserting char");   
-    this.struct.splice(index, 0, char);
-    console.log(this.struct);
-  }
-
-  handleLocalDelete(idx, connections) {
+  localDelete(charId, connections) {
     this.list.incCounter();
     console.log(this.list);
-    const char = this.struct.splice(idx, 1)[0];
-    this.deleteText(idx);
+    const char = this.struct.splice(charId, 1)[0];
+    this.deleteChar(charId);
     //Broadcast the delete operation to all the connections
     this.broadcast(char, connections, "delete"); 
   }
 
-  handleRemoteDelete(char, peerId) {	  
+  remoteDelete(char, peerId) {	  
 	  console.log("In remote delete"+ char.value);
     const index = this.findIndexByPosition(char);
     this.struct.splice(index, 1);
-    this.deleteText(index);
+    this.deleteChar(index);
     return this.text;
   }
 
@@ -267,46 +256,24 @@ class CRDT {
     }
   }
 
-  generateChar(val, index) {
-    const posBefore = (this.struct[index - 1] && this.struct[index - 1].position) || [];
-    const posAfter = (this.struct[index] && this.struct[index].position) || [];
-    const newPos = this.generatePosBetween(posBefore, posAfter);
+  createChar(val, index) {
+    const positionBefore = (this.struct[index - 1] && this.struct[index - 1].position) || [];
+    const positionAfter = (this.struct[index] && this.struct[index].position) || [];
+    const newPosition = this.getPositionBetween(positionBefore, positionAfter);
     const localCounter = this.list.localVersion.counter;
-    return new Char(this.peerId, val, localCounter, newPos);
+    return new Char(this.peerId, val, localCounter, newPosition);
   }
 
-  retrieveStrategy(level) {
+  getStrategy(level) {
     if (this.strategyCache[level]) return this.strategyCache[level];
-    let strategy;
-
-    switch (this.strategy) {
-      case 'plus':
-        strategy = '+';
-        break;
-      case 'minus':
-        strategy = '-';
-        break;
-      case 'random':
-        strategy = Math.round(Math.random()) === 0 ? '+' : '-';
-        break;
-      case 'every2nd':
-        strategy = ((level+1) % 2) === 0 ? '-' : '+';
-        break;
-      case 'every3rd':
-        strategy = ((level+1) % 3) === 0 ? '-' : '+';
-        break;
-      default:
-        strategy = ((level+1) % 2) === 0 ? '-' : '+';
-        break;
-    }
-
+    let strategy = Math.round(Math.random()) === 0 ? '+' : '-';
     this.strategyCache[level] = strategy;
     return strategy;
   }
 
-  generatePosBetween(pos1, pos2, newPos=[], level=0) {
+  getPositionBetween(pos1, pos2, newPos=[], level=0) {
     let base = Math.pow(this.mult, level) * this.base;
-    let boundaryStrategy = this.retrieveStrategy(level);
+    let boundaryStrategy = this.getStrategy(level);
 
     let id1 = pos1[0] || new Identifier(0, this.peerId);
     let id2 = pos2[0] || new Identifier(base, this.peerId);
@@ -320,15 +287,15 @@ class CRDT {
     } else if (id2.digit - id1.digit === 1) {
 
       newPos.push(id1);
-      return this.generatePosBetween(pos1.slice(1), [], newPos, level+1);
+      return this.getPositionBetween(pos1.slice(1), [], newPos, level+1);
 
     } else if (id1.digit === id2.digit) {
       if (id1.peerId < id2.peerId) {
         newPos.push(id1);
-        return this.generatePosBetween(pos1.slice(1), [], newPos, level+1);
+        return this.getPositionBetween(pos1.slice(1), [], newPos, level+1);
       } else if (id1.peerId === id2.peerId) {
         newPos.push(id1);
-        return this.generatePosBetween(pos1.slice(1), pos2.slice(1), newPos, level+1);
+        return this.getPositionBetween(pos1.slice(1), pos2.slice(1), newPos, level+1);
       } else {
         throw new Error("Fix Position Sorting");
       }
@@ -349,7 +316,7 @@ class CRDT {
     return Math.floor(Math.random() * (max - min)) + min;
   }
 
-  insertText(val, index) {
+  insertChar(val, index) {
     if(val.length == 0) {
       val = "\n";
     }
@@ -357,7 +324,7 @@ class CRDT {
     console.log(this.text);
   }
 
-  deleteText(index) {
+  deleteChar(index) {
     this.text = this.text.slice(0, index) + this.text.slice(index + 1);
     console.log("Deleting char");
     console.log(this.struct);  

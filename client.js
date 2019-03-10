@@ -14,9 +14,9 @@ window.createController =function(peerId, targetId){
 
 window.LogData =function(pos, value, action, connections){
   if(action == "insert")
-  crdtController.crdt.handleLocalInsert(value, pos, connections);
+  crdtController.crdt.localInsert(value, pos, connections);
   if(action == "remove")
-  crdtController.crdt.handleLocalDelete(pos, connections);
+  crdtController.crdt.localDelete(pos, connections);
 };
 
 window.fetchCrdt =function(){
@@ -29,9 +29,9 @@ window.syncStruct =function(struct,text){
 };
 
 window.LogRemoteInsertData =function(char){
-  return crdtController.handleRemoteInsert(char);
+  return crdtController.remoteInsert(char);
 };
 
 window.LogRemoteDeleteData =function(char, id){
-  return crdtController.handleRemoteDelete(char, id);
+  return crdtController.remoteDelete(char, id);
 };
