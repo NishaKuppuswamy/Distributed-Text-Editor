@@ -173,15 +173,21 @@
                     console.log(connections);              
                 }
             });
-            //conn.on('close', disconnect);
         }
+		// Destroying the peer and it connections on closing the window
+        $(window).on("beforeunload", function() { 
+            peer.destroy();
+            //var io = io();
+            //io.emit('end');
+        });
+        peer.on("error", err => {
+        const pid = String(err).replace("Error: Could not connect to peer ", "");
+        console.log(err.type);
+        if(err.type == "peer-unavailable"){
+            $(location).attr('href', 'http://localhost:3000/error')
+        }
+        });
 
-        function disconnect(){
-            if (conn.peer) {
-                conn.peer = null;
-                conn.close();
-            }
-        }
         
         $('#share').on("click", function () {
             getURL();

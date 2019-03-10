@@ -14,6 +14,10 @@ app.get('/shared', function (req, res) {
     res.sendFile('/index.html', { root: __dirname })    
 });
 
+app.get('/error', function(req, res){
+    res.redirect('/error.html');
+});
+
 var server = app.listen(3000, function () { });
 
 var options = {
