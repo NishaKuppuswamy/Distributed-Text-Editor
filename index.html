@@ -174,7 +174,12 @@
                 }
             });
         }
-
+		// Destroying the peer and it connections on closing the window
+        $(window).on("beforeunload", function() { 
+            peer.destroy();
+            //var io = io();
+            //io.emit('end');
+        });
         peer.on("error", err => {
         const pid = String(err).replace("Error: Could not connect to peer ", "");
         console.log(err.type);
