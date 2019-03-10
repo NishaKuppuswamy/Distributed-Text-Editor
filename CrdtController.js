@@ -1,15 +1,15 @@
 //const TreeMap = require("treemap-js");
 //var ArrayList = require('arraylist-js')
 //var LSEQArray = require('lseqarray');
-let crdtLinear = require('./crdtLinear');
+let crdtLinear = require('./crdt');
 let CRDT = crdtLinear.CRDT;
 let char = require('./char');
 let Char = char.Char;
 
 class CrdtController {
-    constructor(peerId, targetId) {
+    constructor(peerId) {
         this.peerId = peerId;
-        this.crdt = new CRDT(peerId, targetId);
+        this.crdt = new CRDT(peerId);
     }
 
     processCrdt(pos, value, action) {

@@ -7,9 +7,9 @@ window.getURL =function(){
   document.getElementById('url').innerHTML = "http://localhost:3000/shared?id="+crdtController.peerId;
 };
 
-window.createController =function(peerId, targetId){
+window.createController =function(peerId){
   console.log("created controller");
-  crdtController = new CrdtController(peerId, targetId);
+  crdtController = new CrdtController(peerId);
 };
 
 window.LogData =function(pos, value, action, connections){

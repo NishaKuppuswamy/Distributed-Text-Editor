@@ -6,51 +6,49 @@ let version = require('./versionList');
 let VersionList = version.VersionList;
 
 class CRDT {
-  constructor(peerId, targetId, base=32, boundary=10, strategy='random', mult=2) { 
-    this.list = new VersionList(peerId);
-    this.struct = [];
+  constructor(peerId, base=32, boundary=10, strategy='random', multiplyFactor=2) { 
     this.peerId = peerId;
-    this.text = "";
     this.base = base;
     this.boundary = boundary;
     this.strategy = strategy;
     this.strategyCache = [];
-    this.mult = mult;
+    this.multiplyFactor = multiplyFactor;
+    this.list = new VersionList(peerId);
+    this.struct = [];    
+    this.text = "";
     this.connectionToTarget = "";
-    this.initiatorId = targetId;
   }
 
   localInsert(val, index, connections) {
     this.list.incCounter();
     console.log(this.list);
-    //console.log(val);      
     const char = this.createChar(val, index);
     this.struct.splice(index, 0, char);
     this.insertChar(char.value, index);
     //Broadcast the insert to all my coonections
-    this.broadcast(char, connections, "insert"); //will be executed if local insert is done by initiator
+    this.broadcast(char, connections, "insert"); 
   }
   
   /*function to broadcast the change with all the existing connections */
   broadcast(char, connections, action) {
     var charJSON = JSON.stringify({Insert: char});    
 	  for(var peerId in connections) {
-        console.log("Broadcasting to connections"+peerId);
-        if(connections[peerId].peerConnection.signalingState == "closed") {
-		  delete connections[peerId];
-		  continue;
-	    }
-        if(action === "insert"){
-          connections[peerId].send("Insert:"+charJSON);
-        }			  
-        else if(action == "delete"){
-          connections[peerId].send("Delete:"+charJSON+"break"+this.peerId);
-        }			  
+      if(connections[peerId].peerConnection.signalingState == "closed") {
+        delete connections[peerId];
+        continue;
+      }
+      console.log("Broadcasting to connections"+peerId);
+      if(action === "insert") {
+        connections[peerId].send("Insert:"+charJSON);
+      }			  
+      else if(action == "delete") {
+        connections[peerId].send("Delete:"+charJSON+"break"+this.peerId);
+      }			  
 	  }
   }
 
   remoteInsert(char) {
-	  console.log("Remote ins "+char);
+	  console.log("Remote insert "+char);
     const index = this.findInsertIndex(char);
     this.struct.splice(index, 0, char);
     this.insertChar(char.value, index);
@@ -81,7 +79,8 @@ class CRDT {
 
     if (this.struct.length === 0 || char.compareTo(this.struct[left]) < 0) {
       return left;
-    } else if (char.compareTo(this.struct[right]) > 0) {
+    } 
+    else if (char.compareTo(this.struct[right]) > 0) {
       return this.struct.length;
     }
 
@@ -91,9 +90,11 @@ class CRDT {
 
       if (compareNum === 0) {
         return mid;
-      } else if (compareNum > 0) {
+      } 
+      else if (compareNum > 0) {
         left = mid;
-      } else {
+      } 
+      else {
         right = mid;
       }
     }
@@ -116,19 +117,23 @@ class CRDT {
 
       if (compareNum === 0) {
         return mid;
-      } else if (compareNum > 0) {
+      } 
+      else if (compareNum > 0) {
         left = mid;
-      } else {
+      } 
+      else {
         right = mid;
       }
     }
 
     if (char.compareTo(this.struct[left]) === 0) {
       return left;
-    } else if (char.compareTo(this.struct[right]) === 0) {
+    } 
+    else if (char.compareTo(this.struct[right]) === 0) {
       return right;
-    } else {
-      throw new Error("Character does not exist in CRDT.");
+    } 
+    else {
+      throw new Error("No such character exists in CRDT");
     }
   }
 
@@ -148,7 +153,7 @@ class CRDT {
   }
 
   getPositionBetween(pos1, pos2, newPos=[], level=0) {
-    let base = Math.pow(this.mult, level) * this.base;
+    let base = Math.pow(this.multiplyFactor, level) * this.base;
     let boundaryStrategy = this.getStrategy(level);
 
     let id1 = pos1[0] || new Identifier(0, this.peerId);
@@ -160,19 +165,23 @@ class CRDT {
       newPos.push(new Identifier(newDigit, this.peerId));
       return newPos;
 
-    } else if (id2.digit - id1.digit === 1) {
+    } 
+    else if (id2.digit - id1.digit === 1) {
 
       newPos.push(id1);
       return this.getPositionBetween(pos1.slice(1), [], newPos, level+1);
 
-    } else if (id1.digit === id2.digit) {
+    } 
+    else if (id1.digit === id2.digit) {
       if (id1.peerId < id2.peerId) {
         newPos.push(id1);
         return this.getPositionBetween(pos1.slice(1), [], newPos, level+1);
-      } else if (id1.peerId === id2.peerId) {
+      } 
+      else if (id1.peerId === id2.peerId) {
         newPos.push(id1);
         return this.getPositionBetween(pos1.slice(1), pos2.slice(1), newPos, level+1);
-      } else {
+      } 
+      else {
         throw new Error("Fix Position Sorting");
       }
     }
@@ -181,10 +190,12 @@ class CRDT {
   generateIdBetween(min, max, boundaryStrategy) {
     if ((max - min) < this.boundary) {
       min = min + 1;
-    } else {
+    } 
+    else {
       if (boundaryStrategy === '-') {
         min = max - this.boundary;
-      } else {
+      } 
+      else {
         min = min + 1;
         max = min + this.boundary;
       }
@@ -197,6 +208,7 @@ class CRDT {
       val = "\n";
     }
     this.text = this.text.slice(0, index) + val + this.text.slice(index);
+    console.log(this.struct);
     console.log(this.text);
   }
 
