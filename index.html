@@ -172,59 +172,22 @@
                     console.log("New connection list");
                     console.log(connections);              
                 }
-                else {                    
-                    console.log("Request to remove connection");
-                    var peerId = data.split(":")[1];                    
-                    if(connections[peerId]!=null){
-                        connections[peerId].close();
-                        connections.delete(peerId);
-                    }      
-                    console.log("After removal connection list");
-                    console.log(connections);              
-                }
             });
         }
-
+		// Destroying the peer and it connections on closing the window
+        $(window).on("beforeunload", function() { 
+            peer.destroy();
+            //var io = io();
+            //io.emit('end');
+        });
         peer.on("error", err => {
         const pid = String(err).replace("Error: Could not connect to peer ", "");
-        //this.removeFromConnections(pid);
         console.log(err.type);
         if(err.type == "peer-unavailable"){
             $(location).attr('href', 'http://localhost:3000/error')
         }
         });
 
-       $(window).on("beforeunload", function() { 
-            //var result = confirm("Do you really want to close?");
-            //if(result){
-                for(let con of Object.keys(connections)){
-                    (function(con){ 
-
-                    setTimeout(function() { 
-                        console.log(con) 
-                    }, 100);
-
-                    })(con);
-                    /*setTimeout(function() {
-                    console.log("Remove my connection"+peer.id+"from the peer "+con);
-                    connections[con].send(peer.id);
-                    }, 5000);*/
-                }            
-                //peer.destroy();
-            //}             
-            return confirm("Do you really want to close?");
-        });
-
-        peer.on('close', disconnect);
-
-        //conn.on('close', disconnect);
-
-        function disconnect(){
-            for(let con of Object.keys(connections)){
-                    console.log("Remove my connection"+peer.id+"from the peer "+con);
-                    connections[con].send("RemoveConnect:"+peer.id);
-            }
-        }
         
         $('#share').on("click", function () {
             getURL();
