@@ -1,6 +1,3 @@
-//const TreeMap = require("treemap-js");
-//var ArrayList = require('arraylist-js')
-//var LSEQArray = require('lseqarray');
 let crdtLinear = require('./crdt');
 let CRDT = crdtLinear.CRDT;
 let char = require('./char');
