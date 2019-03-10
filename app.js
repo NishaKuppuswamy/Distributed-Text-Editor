@@ -21,16 +21,30 @@ app.get('/listCRDT', function (req, res) {
 });
 
 var server = http.createServer(app);
-
+console.log("http://"+ip.address()+":"+ 3000);
 var io = require('socket.io')(server);
+//var sockets = {}, nextSocketId = 0;
+
 io.on("connection", function(socket){
+   // var socketId = nextSocketId++;
+  // sockets[socketId] = socket;
     socket.on("send message", function(sent_msg, callback){
         //sent_msg = "[ " + getCurrentDate() + " ]: " + sent_msg;
 
         io.sockets.emit("update messages", sent_msg);
         callback();
     });
+    socket.on('end', function (){
+        socket.disconnect(0);
+    });
 });
+io.sockets.on('disconnect', function() {
+    // handle disconnect
+    console.log("disonnecting..");
+    io.sockets.disconnect();
+    io.sockets.close();
+});
+
 
 server.listen(3000);
 

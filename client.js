@@ -7,8 +7,8 @@ let Version = ver.Version;
 const {parse, stringify} = require('flatted/cjs');
 var crdtController;
 var r;
-window.getURL =function(){
-  document.getElementById('url').innerHTML = "http://localhost:3000/shared?id="+crdtController.siteID;
+window.getURL =function(ip){
+  document.getElementById('url').innerHTML = "http://"+ip+":3000/shared?id="+crdtController.siteID;
 };
 
 window.createController =function(siteID, targetId){
