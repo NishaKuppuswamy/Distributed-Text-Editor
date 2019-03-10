@@ -16,7 +16,6 @@ class CRDT {
     this.list = new VersionList(peerId);
     this.struct = [];    
     this.text = "";
-    this.connectionToTarget = "";
   }
 
   localInsert(val, index, connections) {
@@ -33,6 +32,7 @@ class CRDT {
   broadcast(char, connections, action) {
     var charJSON = JSON.stringify({Insert: char});    
 	  for(var peerId in connections) {
+      //Checking the status of the connection and delete the entry if the connection is closed
       if(connections[peerId].peerConnection.signalingState == "closed") {
         delete connections[peerId];
         continue;
@@ -48,7 +48,7 @@ class CRDT {
   }
 
   remoteInsert(char) {
-	  console.log("Remote insert "+char);
+	  console.log("Remote insert "+char.value);
     const index = this.findInsertIndex(char);
     this.struct.splice(index, 0, char);
     this.insertChar(char.value, index);
@@ -65,7 +65,7 @@ class CRDT {
   }
 
   remoteDelete(char, peerId) {	  
-	  console.log("In remote delete"+ char.value);
+	  console.log("Remote delete"+ char.value);
     const index = this.findIndexByPosition(char);
     this.struct.splice(index, 1);
     this.deleteChar(index);
