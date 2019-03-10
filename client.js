@@ -1,19 +1,15 @@
 let controller = require('./CrdtController');
 let CrdtController = controller.CrdtController;
-let list = require('./versionList');
-let VersionList = list.VersionList;
-let ver = require('./version');
-let Version = ver.Version;
 const {parse, stringify} = require('flatted/cjs');
 var crdtController;
 var r;
 window.getURL =function(){
-  document.getElementById('url').innerHTML = "http://localhost:3000/shared?id="+crdtController.siteID;
+  document.getElementById('url').innerHTML = "http://localhost:3000/shared?id="+crdtController.peerId;
 };
 
-window.createController =function(siteID, targetId){
+window.createController =function(peerId, targetId){
   console.log("created controller");
-  crdtController = new CrdtController(siteID, targetId);
+  crdtController = new CrdtController(peerId, targetId);
 };
 
 window.LogData =function(pos, value, action, connections){
@@ -27,25 +23,9 @@ window.fetchCrdt =function(){
   return crdtController.crdt;
 };
 
-window.fetchVersion =function(){
-  return crdtController.crdt.list;
-};
-
 window.syncStruct =function(struct,text){
   crdtController.crdt.struct = struct;
   crdtController.crdt.text = text;
-};
-
-window.syncVersion =function(list){
-  console.log("check list");
-  console.log(list);
-  const versions = list.versions.map(ver => {
-    let version = new Version(ver.siteId);
-    version.counter = ver.counter;
-    ver.unHandled.forEach(ex => version.unHandled.push(ex));
-    return version;
-  });
-  versions.forEach(version => crdtController.crdt.list.versions.push(version));
 };
 
 window.LogRemoteInsertData =function(char){

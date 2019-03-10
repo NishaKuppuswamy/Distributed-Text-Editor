@@ -7,9 +7,9 @@ let char = require('./char');
 let Char = char.Char;
 
 class CrdtController {
-    constructor(siteID, targetId) {
-        this.siteID = siteID;
-        this.crdt = new CRDT(siteID, targetId);
+    constructor(peerId, targetId) {
+        this.peerId = peerId;
+        this.crdt = new CRDT(peerId, targetId);
     }
 
     processCrdt(pos, value, action) {
@@ -20,21 +20,14 @@ class CrdtController {
     }
 
     handleRemoteInsert(char){
-        char = new Char(char.value, char.counter, char.siteId, char.position);
+        char = new Char(char.peerId, char.value, char.counter, char.position);
         return this.crdt.handleRemoteInsert(char);
     }
     
     handleRemoteDelete(char, id){
-        char = new Char(char.value, char.counter, char.siteId, char.position);
+        char = new Char(char.peerId, char.value, char.counter, char.position);
         return this.crdt.handleRemoteDelete(char, id);
     }
-
-    /*listCrdtMap() {
-        console.log("listcrdt");
-        this.crdtList.map(function (crdt) {
-            console.log(codt.pos + ":" + crdt.val);
-        })
-    }*/
 }
 
 module.exports = {

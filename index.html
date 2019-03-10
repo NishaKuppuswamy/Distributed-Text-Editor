@@ -85,9 +85,6 @@
                     var crdt = fetchCrdt();
                     crdt = JSON.stringify(crdt);
                     conn.send("Initial crdt:"+crdt);
-                    var versionList = fetchVersion();
-                    versionList = JSON.stringify(versionList);
-                    conn.send("Initial versionList:"+versionList);
                 }
                 else if(data.startsWith("Initial crdt")){
                     var crdt = data.replace("Initial crdt:",""); 
@@ -119,20 +116,6 @@
                     var document = editor.getSession().getDocument(); 
                     document.setValue(text);
                     canChange = true;
-                }
-                else if(data.startsWith("Initial versionList")) {	
-                    var versionList = data.replace("Initial versionList:",""); 
-                    versionList = JSON.parse(versionList); 
-                    if(versionList!=undefined) {
-                        console.log("Receiving the initial version list");
-                        console.log(versionList);
-                        //Assign it to my versionList
-                        syncVersion(versionList);
-                    }
-                    else {
-                        console.log("VersionList is undefined");
-                        console.log(versionList);
-                    } 
                 }
                 else if(data.startsWith("Delete")) {	
                     var connect = data.replace("Delete:","").split("break");

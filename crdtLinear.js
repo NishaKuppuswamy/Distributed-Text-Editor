@@ -2,16 +2,15 @@ let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
 let char = require('./char');
 let Char = char.Char;
-//let compareTo = char.compareTo;
 let version = require('./versionList');
 let VersionList = version.VersionList;
 
 class CRDT {
-  constructor(/*controller,*/siteId, targetId, base=32, boundary=10, strategy='random', mult=2) {
+  constructor(/*controller,*/peerId, targetId, base=32, boundary=10, strategy='random', mult=2) {
     //this.controller = controller;  
-    this.list = new VersionList(siteId);
+    this.list = new VersionList(peerId);
     this.struct = [];
-    this.siteId = siteId;
+    this.peerId = peerId;
     this.text = "";
     this.base = base;
     this.boundary = boundary;
@@ -46,7 +45,7 @@ class CRDT {
         connections[peerId].send("Insert:"+charJSON);
       }			  
 		  else if(action == "delete"){
-        connections[peerId].send("Delete:"+charJSON+"break"+this.siteId);
+        connections[peerId].send("Delete:"+charJSON+"break"+this.peerId);
       }			  
 	  }
   }
@@ -78,7 +77,7 @@ class CRDT {
     this.broadcast(char, connections, "delete"); 
   }
 
-  handleRemoteDelete(char, siteId) {	  
+  handleRemoteDelete(char, peerId) {	  
 	  console.log("In remote delete"+ char.value);
     const index = this.findIndexByPosition(char);
     this.struct.splice(index, 1);
@@ -149,7 +148,7 @@ class CRDT {
     const posAfter = (this.struct[index] && this.struct[index].position) || [];
     const newPos = this.generatePosBetween(posBefore, posAfter);
     const localCounter = this.list.localVersion.counter;
-    return new Char(val, localCounter, this.siteId, newPos);
+    return new Char(this.peerId, val, localCounter, newPos);
   }
 
   retrieveStrategy(level) {
@@ -185,13 +184,13 @@ class CRDT {
     let base = Math.pow(this.mult, level) * this.base;
     let boundaryStrategy = this.retrieveStrategy(level);
 
-    let id1 = pos1[0] || new Identifier(0, this.siteId);
-    let id2 = pos2[0] || new Identifier(base, this.siteId);
+    let id1 = pos1[0] || new Identifier(0, this.peerId);
+    let id2 = pos2[0] || new Identifier(base, this.peerId);
 
     if (id2.digit - id1.digit > 1) {
 
       let newDigit = this.generateIdBetween(id1.digit, id2.digit, boundaryStrategy);
-      newPos.push(new Identifier(newDigit, this.siteId));
+      newPos.push(new Identifier(newDigit, this.peerId));
       return newPos;
 
     } else if (id2.digit - id1.digit === 1) {
@@ -200,10 +199,10 @@ class CRDT {
       return this.generatePosBetween(pos1.slice(1), [], newPos, level+1);
 
     } else if (id1.digit === id2.digit) {
-      if (id1.siteId < id2.siteId) {
+      if (id1.peerId < id2.peerId) {
         newPos.push(id1);
         return this.generatePosBetween(pos1.slice(1), [], newPos, level+1);
-      } else if (id1.siteId === id2.siteId) {
+      } else if (id1.peerId === id2.peerId) {
         newPos.push(id1);
         return this.generatePosBetween(pos1.slice(1), pos2.slice(1), newPos, level+1);
       } else {

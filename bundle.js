@@ -8,9 +8,9 @@ let char = require('./char');
 let Char = char.Char;
 
 class CrdtController {
-    constructor(siteID, targetId) {
-        this.siteID = siteID;
-        this.crdt = new CRDT(siteID, targetId);
+    constructor(peerId, targetId) {
+        this.peerId = peerId;
+        this.crdt = new CRDT(peerId, targetId);
     }
 
     processCrdt(pos, value, action) {
@@ -21,21 +21,14 @@ class CrdtController {
     }
 
     handleRemoteInsert(char){
-        char = new Char(char.value, char.counter, char.siteId, char.position);
+        char = new Char(char.peerId, char.value, char.counter, char.position);
         return this.crdt.handleRemoteInsert(char);
     }
     
     handleRemoteDelete(char, id){
-        char = new Char(char.value, char.counter, char.siteId, char.position);
+        char = new Char(char.peerId, char.value, char.counter, char.position);
         return this.crdt.handleRemoteDelete(char, id);
     }
-
-    /*listCrdtMap() {
-        console.log("listcrdt");
-        this.crdtList.map(function (crdt) {
-            console.log(codt.pos + ":" + crdt.val);
-        })
-    }*/
 }
 
 module.exports = {
@@ -46,33 +39,41 @@ let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
 
 class Char {
-  constructor(value, counter, siteId, identifiers) {
-    this.position = identifiers;
-    this.counter = counter;
-    this.siteId = siteId;
+  constructor(peerId, value, counter, identifiers) {
+    this.peerId = peerId;
     this.value = value;
+    this.counter = counter;
+    this.position = identifiers;     
   }
 
-  compareTo(otherChar) {
-    let comp, id1, id2;
+  //Custom comparator for comparing two characters based on identifiers 
+  compareTo(char2) {
+    let id1, id2, result;
+
     const pos1 = this.position;
-    const pos2 = otherChar.position;
+    const pos2 = char2.position;
 
+    //Comparing the identifiers until the minimum length among pos1 and pos2
     for (let i = 0; i < Math.min(pos1.length, pos2.length); i++) {
-      id1 = new Identifier(pos1[i].digit,pos1[i].siteId);
-      id2 = new Identifier(pos2[i].digit,pos2[i].siteId);
-      comp = id1.compareTo(id2);
+      id1 = new Identifier(pos1[i].digit,pos1[i].peerId);
+      id2 = new Identifier(pos2[i].digit,pos2[i].peerId);
+      result = id1.compare(id2);
 
-      if (comp !== 0) {
-        return comp;
+      if (result !== 0) {
+        return result;
       }
     }
-
+    // Comparing the length of the identifiers if the result was 0
+    //Return -1 if the length of position of char1 is less than char2
     if (pos1.length < pos2.length) {
       return -1;
-    } else if (pos1.length > pos2.length) {
+    } 
+    //Return 1 if the length of position of char1 is greater than char2
+    else if (pos1.length > pos2.length) {
       return 1;
-    } else {
+    } 
+    //Return 0 if the length of position of char1 is equal to char2
+    else {
       return 0;
     }
   }
@@ -84,20 +85,16 @@ module.exports = {
 },{"./identifier":5}],3:[function(require,module,exports){
 let controller = require('./CrdtController');
 let CrdtController = controller.CrdtController;
-let list = require('./versionList');
-let VersionList = list.VersionList;
-let ver = require('./version');
-let Version = ver.Version;
 const {parse, stringify} = require('flatted/cjs');
 var crdtController;
 var r;
 window.getURL =function(){
-  document.getElementById('url').innerHTML = "http://localhost:3000/shared?id="+crdtController.siteID;
+  document.getElementById('url').innerHTML = "http://localhost:3000/shared?id="+crdtController.peerId;
 };
 
-window.createController =function(siteID, targetId){
+window.createController =function(peerId, targetId){
   console.log("created controller");
-  crdtController = new CrdtController(siteID, targetId);
+  crdtController = new CrdtController(peerId, targetId);
 };
 
 window.LogData =function(pos, value, action, connections){
@@ -111,25 +108,9 @@ window.fetchCrdt =function(){
   return crdtController.crdt;
 };
 
-window.fetchVersion =function(){
-  return crdtController.crdt.list;
-};
-
 window.syncStruct =function(struct,text){
   crdtController.crdt.struct = struct;
   crdtController.crdt.text = text;
-};
-
-window.syncVersion =function(list){
-  console.log("check list");
-  console.log(list);
-  const versions = list.versions.map(ver => {
-    let version = new Version(ver.siteId);
-    version.counter = ver.counter;
-    ver.unHandled.forEach(ex => version.unHandled.push(ex));
-    return version;
-  });
-  versions.forEach(version => crdtController.crdt.list.versions.push(version));
 };
 
 window.LogRemoteInsertData =function(char){
@@ -140,21 +121,20 @@ window.LogRemoteDeleteData =function(char, id){
   return crdtController.handleRemoteDelete(char, id);
 };
 
-},{"./CrdtController":1,"./version":7,"./versionList":8,"flatted/cjs":6}],4:[function(require,module,exports){
+},{"./CrdtController":1,"flatted/cjs":6}],4:[function(require,module,exports){
 let identifier = require('./identifier');
 let Identifier = identifier.Identifier;
 let char = require('./char');
 let Char = char.Char;
-//let compareTo = char.compareTo;
 let version = require('./versionList');
 let VersionList = version.VersionList;
 
 class CRDT {
-  constructor(/*controller,*/siteId, targetId, base=32, boundary=10, strategy='random', mult=2) {
+  constructor(/*controller,*/peerId, targetId, base=32, boundary=10, strategy='random', mult=2) {
     //this.controller = controller;  
-    this.list = new VersionList(siteId);
+    this.list = new VersionList(peerId);
     this.struct = [];
-    this.siteId = siteId;
+    this.peerId = peerId;
     this.text = "";
     this.base = base;
     this.boundary = boundary;
@@ -189,7 +169,7 @@ class CRDT {
         connections[peerId].send("Insert:"+charJSON);
       }			  
 		  else if(action == "delete"){
-        connections[peerId].send("Delete:"+charJSON+"break"+this.siteId);
+        connections[peerId].send("Delete:"+charJSON+"break"+this.peerId);
       }			  
 	  }
   }
@@ -221,7 +201,7 @@ class CRDT {
     this.broadcast(char, connections, "delete"); 
   }
 
-  handleRemoteDelete(char, siteId) {	  
+  handleRemoteDelete(char, peerId) {	  
 	  console.log("In remote delete"+ char.value);
     const index = this.findIndexByPosition(char);
     this.struct.splice(index, 1);
@@ -292,7 +272,7 @@ class CRDT {
     const posAfter = (this.struct[index] && this.struct[index].position) || [];
     const newPos = this.generatePosBetween(posBefore, posAfter);
     const localCounter = this.list.localVersion.counter;
-    return new Char(val, localCounter, this.siteId, newPos);
+    return new Char(this.peerId, val, localCounter, newPos);
   }
 
   retrieveStrategy(level) {
@@ -328,13 +308,13 @@ class CRDT {
     let base = Math.pow(this.mult, level) * this.base;
     let boundaryStrategy = this.retrieveStrategy(level);
 
-    let id1 = pos1[0] || new Identifier(0, this.siteId);
-    let id2 = pos2[0] || new Identifier(base, this.siteId);
+    let id1 = pos1[0] || new Identifier(0, this.peerId);
+    let id2 = pos2[0] || new Identifier(base, this.peerId);
 
     if (id2.digit - id1.digit > 1) {
 
       let newDigit = this.generateIdBetween(id1.digit, id2.digit, boundaryStrategy);
-      newPos.push(new Identifier(newDigit, this.siteId));
+      newPos.push(new Identifier(newDigit, this.peerId));
       return newPos;
 
     } else if (id2.digit - id1.digit === 1) {
@@ -343,10 +323,10 @@ class CRDT {
       return this.generatePosBetween(pos1.slice(1), [], newPos, level+1);
 
     } else if (id1.digit === id2.digit) {
-      if (id1.siteId < id2.siteId) {
+      if (id1.peerId < id2.peerId) {
         newPos.push(id1);
         return this.generatePosBetween(pos1.slice(1), [], newPos, level+1);
-      } else if (id1.siteId === id2.siteId) {
+      } else if (id1.peerId === id2.peerId) {
         newPos.push(id1);
         return this.generatePosBetween(pos1.slice(1), pos2.slice(1), newPos, level+1);
       } else {
@@ -390,24 +370,34 @@ module.exports = {
 }
 },{"./char":2,"./identifier":5,"./versionList":8}],5:[function(require,module,exports){
 class Identifier {
-  constructor(digit, siteId) {
+
+  constructor(digit, peerId) {
     this.digit = digit; 
-    this.siteId = siteId;
+    this.peerId = peerId;
   }
 
-// Compare identifiers using their digit value with siteID as the tiebreaker
-// If identifers are equal, return 0
-  compareTo(otherId) {
-    if (this.digit < otherId.digit) {
+  // Function for comparing the identifiers using their digit value followed by their peerId
+  compare(id2) {
+    // Return -1 if the digit value of id2 is greater
+    if (this.digit < id2.digit) {
       return -1;
-    } else if (this.digit > otherId.digit) {
+    } 
+    // Return 1 if the digit value of id2 is smaller
+    else if (this.digit > id2.digit) {
       return 1;
-    } else {
-      if (this.siteId < otherId.siteId) {
+    } 
+    // When both have digit values equal peerId is compared
+    else {
+      //Return -1 if the peerId of id2 is greater
+      if (this.peerId < id2.peerId) {
         return -1;
-      } else if (this.siteId > otherId.siteId) {
+      } 
+      //Return 1 if the peerId of id2 is smaller
+      else if (this.peerId > id2.peerId) {
         return 1;
-      } else {
+      } 
+      // Return 0 if identifiers are equal
+      else {
         return 0;
       }
     }
@@ -537,33 +527,10 @@ module.exports = Flatted;
 
 },{}],7:[function(require,module,exports){
 class Version {
-  constructor(siteId) {
-    this.siteId = siteId;
-    // Operation count for that particular siteID
+  constructor(peerId) {
+    this.peerId = peerId;
+    // Operation count for that particular peerId
     this.counter = 0;
-    //Operation not performed yet are stored in unHandled
-    this.unHandled = [];
-  }
-
-  updateVersion(version) {
-    const incCounter = version.counter;
-    // If incoming counter is less than the current counter add to unHandled array
-    if (incCounter <= this.counter) {
-      const idx = this.unHandled.indexOf(incCounter);
-      this.unHandled.splice(idx, 1);
-    } 
-    //If incoming counter is current counter+1 then it is the next operation
-    else if (incCounter === this.counter + 1) {
-      this.counter = this.counter + 1;
-    } 
-    // If incoming counter is greater than current counter+1 
-    //add all the missing operation counter to the unHandled array
-    else {
-      for (let i = this.counter + 1; i < incCounter; i++) {
-        this.unHandled.push(i);
-      }
-      this.counter = incCounter;
-    }
   }
 }
 
@@ -574,58 +541,14 @@ module.exports = {
 let ver = require('./version');
 let Version = ver.Version;
 
-//List of versions for each siteID to maintain consistency and 
-//avoid duplicate operations
+//Local version for the peer which increments the counter for each operation
 class VersionList {
-  constructor(siteId) {
-    this.versions = [];
-    this.localVersion = new Version(siteId);
-    this.versions.push(this.localVersion);
+  constructor(peerId) {
+    this.localVersion = new Version(peerId);
   }
    //Increment counter of local version for each operation
   incCounter() {
     this.localVersion.counter++;
-  }
-  //Updating the versionlist on receiving versions from other sites 
-  updateVersionList(inVersion) {
-    const exists = this.versions.find(version => inVersion.siteId === version.siteId);
-    //If the site ID of the received version doesnot already exist create a new version
-    //and update the new version
-    if (!exists) {
-      const newVersion = new Version(inVersion.siteId);
-      newVersion.updateVersion(inVersion);
-      this.versions.push(newVersion);
-    } 
-    else {
-        exists.updateVersion(inVersion);
-    }
-  } 
-
-  // Validating if the incoming operation has already been applied
-  applied(inVersion) {
-    const localInVersion = this.getVersionFromList(inVersion);
-    const applied = !!localInVersion;
-    // If the version itself doesnt exist in the list return false
-    if (!applied){
-        return false;
-    }
-    //If version exists check for the counter and if it has been already handled
-    const isLower = inVersion.counter <= localInVersion.counter;
-    const isUnHandled = localInVersion.unHandled.includes(inVersion.counter);
-    return isLower && !isUnHandled;
-  }
-
-  //Check if version exists in the list and return it
-  getVersionFromList(inVersion) {
-    return this.versions.find(version => version.siteId === inVersion.siteId);
-  }
-
-  //Returns the siteId and counter of local version
-  getLocalVersion() {
-    return {
-      siteId: this.localVersion.siteId,
-      counter: this.localVersion.counter
-    };
   }
 }
 

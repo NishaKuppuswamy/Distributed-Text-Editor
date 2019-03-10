@@ -1,22 +1,32 @@
 class Identifier {
-  constructor(digit, siteId) {
+
+  constructor(digit, peerId) {
     this.digit = digit; 
-    this.siteId = siteId;
+    this.peerId = peerId;
   }
 
-// Compare identifiers using their digit value with siteID as the tiebreaker
-// If identifers are equal, return 0
-  compareTo(otherId) {
-    if (this.digit < otherId.digit) {
+  // Function for comparing the identifiers using their digit value followed by their peerId
+  compare(id2) {
+    // Return -1 if the digit value of id2 is greater
+    if (this.digit < id2.digit) {
       return -1;
-    } else if (this.digit > otherId.digit) {
+    } 
+    // Return 1 if the digit value of id2 is smaller
+    else if (this.digit > id2.digit) {
       return 1;
-    } else {
-      if (this.siteId < otherId.siteId) {
+    } 
+    // When both have digit values equal peerId is compared
+    else {
+      //Return -1 if the peerId of id2 is greater
+      if (this.peerId < id2.peerId) {
         return -1;
-      } else if (this.siteId > otherId.siteId) {
+      } 
+      //Return 1 if the peerId of id2 is smaller
+      else if (this.peerId > id2.peerId) {
         return 1;
-      } else {
+      } 
+      // Return 0 if identifiers are equal
+      else {
         return 0;
       }
     }
