@@ -8,8 +8,7 @@
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">    
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
-   <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
-    <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script> -->
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
     <script src="http://ace.c9.io/build/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/peerjs@0.3.20/dist/peer.min.js"></script>
@@ -19,6 +18,7 @@
            console.log("doc ready");
            var newLineArr = [];
            var connections = new Object();
+           var ips = [];
            var targetId = 0;
            var canChange = true;
            const params = new Map(location.search.slice(1).split('&').map(kv => kv.split('=')));
@@ -30,7 +30,8 @@
            }
         var editor = ace.edit("editor");
         editor.setTheme("ace/theme/chrome");  
- 		editor.session.setOptions({tabSize: 1});      
+ 		editor.session.setOptions({tabSize: 1}); 
+        editor.setShowPrintMargin(false);   
         editor.getSession().on('change', function(e){
             if(canChange){
                  var pos = editor.selection.getCursor();
@@ -57,6 +58,9 @@
                         conn.send("Data:"+peer.id);                   
 					});
             } 
+            else{
+                getIPAddress();
+            }
         });
         peer.on('connection', connect);   
         function connect(c){
@@ -142,10 +146,7 @@
                 }
                 else if(data.startsWith("Sending new connection")){                    
                     console.log("Adding the newest connection");
-                    //var data = data.replace("Sending new connection","");
-                    //var splitData = data.split(" break ");
-                    var peerId = data.split(":")[1];;
-                    //var connObj = ParseConnection(splitData[1]);
+                    var peerId = data.split(":")[1];
                     if(connections[peerId]==null){
                         var c = peer.connect(peerId);
                         c.on('open', function(){
@@ -155,13 +156,16 @@
                     console.log("New connection list");
                     console.log(connections);              
                 }
+                else{
+                    console.log("recv remove commands"); 
+                }
             });
         }
 		// Destroying the peer and it connections on closing the window
         $(window).on("beforeunload", function() { 
             peer.destroy();
-            //var io = io();
-            //io.emit('end');
+            var io = io();
+            io.emit('end');
         });
         peer.on("error", err => {
         const pid = String(err).replace("Error: Could not connect to peer ", "");
@@ -173,8 +177,49 @@
 
         
         $('#share').on("click", function () {
-            getURL();
+            getURL(ips[0]);
         });
+        $(window).on("beforeunload", function() { 
+            peer.destroy();
+            var io = io();
+            io.emit('end');
+        });
+
+        function getIPAddress(){
+            function findIP(onNewIP) { //  onNewIp - your listener function for new IPs
+            var myPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection; //compatibility for firefox and chrome
+            var pc = new myPeerConnection({iceServers: []}),
+                noop = function() {},
+                localIPs = {},
+                ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/g,
+                key;
+
+            function ipIterate(ip) {
+                if (!localIPs[ip]) onNewIP(ip);
+                localIPs[ip] = true;
+            }
+            pc.createDataChannel(""); //create a bogus data channel
+            pc.createOffer(function(sdp) {
+                sdp.sdp.split('\n').forEach(function(line) {
+                if (line.indexOf('candidate') < 0) return;
+                line.match(ipRegex).forEach(ipIterate);
+                });
+                pc.setLocalDescription(sdp, noop, noop);
+            }, noop); // create offer and set local description
+            pc.onicecandidate = function(ice) { //listen for candidate events
+                if (!ice || !ice.candidate || !ice.candidate.candidate || !ice.candidate.candidate.match(ipRegex)) return;
+                ice.candidate.candidate.match(ipRegex).forEach(ipIterate);
+            };
+            }
+
+            function addIP(ip) {
+                ips.push(ip);
+            //console.log(ips);
+            }
+
+            findIP(addIP);
+        }
+
     });
         
     </script>
@@ -216,28 +261,79 @@
 </head>
 
 <body>
-    <div>
-
-        <h1>Distributed Text Editor</h1>
-        <hr>
-        <div class="hide" id="conclave">
-                <div class="text-wrapper">
-                    <div class="editor">
-                        <div class="header"><button id="share">Share URL</button>
-                            <div id="url"></div>
-        <!-- <textarea id = "id1"></textarea> --> </div></div></div></div>
-        <p>
-            <i>Decentralized Real-Time Collaborative Editor using CRDT</i>
-        </p>
-        
-        <div id="editor"></div>  
-
-        <br>
-        <br>
-        <div>
+    <div class="parent">
+            <h1>Distributed Text Editor</h1>
+            <hr>
+            <button id="share">Share URL</button>
+            <div id="url"></div>
             
-    </div>
+            
+        <div class="left">
+            <p>
+                <i>Decentralized Real-Time Collaborative Editor using CRDT</i>
+            </p>
+            <div id="editor"></div>  
+
+            <br>
+            <br>
+            
         </div>
+        <div class="right">
+                <form id="chat" method="post" action="#" autocomplete="off">
+                <p>
+                        <i>Chat</i>
+                    </p>
+                    <label for="name">Name</label>
+                    <input type="text" class ="validate" name="name" id="name" />
+                <div id="history"></div>
+                
+                    <input type="text" id="msg_text" class = "send" name="msg_text" />
+                    <input type="submit" value="Send!" />
+                </form>
+                <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+                <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+                <script type="text/javascript">
+               
+                var socket = io.connect('http://localhost:3000', {'reconnection': false});
+                
+                    $('input[type="submit"]').prop('disabled', true); 
+                    $( "#msg_text" ).focus(function() {
+                        if($( "#name" ).val() == "") {
+                            $('.validate').css({ "border": '#FF0000 1px solid'}); 
+                            $('input[type="submit"]').prop('disabled', true); 
+                        }
+                    });
+
+                    $( "#msg_text" ).keypress(function() {
+                        if($( "#msg_text" ).val() != "") {
+                            $('input[type="submit"]').prop('disabled', false); 
+                        }
+                    });
+                    $( "#msg_text" ).keydown(function() {
+                        if($( "#msg_text" ).val() == "") {
+                            $('input[type="submit"]').prop('disabled', true); 
+                        }
+                    });
+                    $("form#chat").submit(function(e) {
+                        e.preventDefault();
+                        socket.emit("send message", $( "#name" ).val()+": "+$(this).find("#msg_text").val(), function() {
+                            $("form#chat #msg_text").val("");
+                        });
+                    });
+                    
+                    socket.on("update messages", function(msg){
+                        var final_message = $("<p />").text(msg);
+                        $("#history").append(final_message);
+                    });
+
+                    socket.on('disconnect', function(){
+                        socket.close();
+                        socket.disconnect();
+                    });
+                    
+                </script>
+            </div> 
+    </div>   
 </body>
 
 </html>

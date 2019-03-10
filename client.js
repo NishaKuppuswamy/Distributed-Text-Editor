@@ -3,8 +3,8 @@ let CrdtController = controller.CrdtController;
 const {parse, stringify} = require('flatted/cjs');
 var crdtController;
 var r;
-window.getURL =function(){
-  document.getElementById('url').innerHTML = "http://localhost:3000/shared?id="+crdtController.peerId;
+window.getURL =function(ip){
+  document.getElementById('url').innerHTML = "http://"+ip+":3000/shared?id="+crdtController.peerId;
 };
 
 window.createController =function(peerId){

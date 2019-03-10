@@ -1,7 +1,4 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-//const TreeMap = require("treemap-js");
-//var ArrayList = require('arraylist-js')
-//var LSEQArray = require('lseqarray');
 let crdtLinear = require('./crdt');
 let CRDT = crdtLinear.CRDT;
 let char = require('./char');
@@ -88,8 +85,8 @@ let CrdtController = controller.CrdtController;
 const {parse, stringify} = require('flatted/cjs');
 var crdtController;
 var r;
-window.getURL =function(){
-  document.getElementById('url').innerHTML = "http://localhost:3000/shared?id="+crdtController.peerId;
+window.getURL =function(ip){
+  document.getElementById('url').innerHTML = "http://"+ip+":3000/shared?id="+crdtController.peerId;
 };
 
 window.createController =function(peerId){
@@ -140,7 +137,6 @@ class CRDT {
     this.list = new VersionList(peerId);
     this.struct = [];    
     this.text = "";
-    this.connectionToTarget = "";
   }
 
   localInsert(val, index, connections) {
@@ -157,6 +153,7 @@ class CRDT {
   broadcast(char, connections, action) {
     var charJSON = JSON.stringify({Insert: char});    
 	  for(var peerId in connections) {
+      //Checking the status of the connection and delete the entry if the connection is closed
       if(connections[peerId].peerConnection.signalingState == "closed") {
         delete connections[peerId];
         continue;
@@ -172,7 +169,7 @@ class CRDT {
   }
 
   remoteInsert(char) {
-	  console.log("Remote insert "+char);
+	  console.log("Remote insert "+char.value);
     const index = this.findInsertIndex(char);
     this.struct.splice(index, 0, char);
     this.insertChar(char.value, index);
@@ -189,7 +186,7 @@ class CRDT {
   }
 
   remoteDelete(char, peerId) {	  
-	  console.log("In remote delete"+ char.value);
+	  console.log("Remote delete"+ char.value);
     const index = this.findIndexByPosition(char);
     this.struct.splice(index, 1);
     this.deleteChar(index);
