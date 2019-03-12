@@ -16,7 +16,6 @@
     <script type="text/javascript">
        $(document).ready(function () {
            console.log("doc ready");
-           var newLineArr = [];
            var connections = new Object();
            var ips = [];
            var targetId = 0;
@@ -90,7 +89,7 @@
                     crdt = JSON.stringify(crdt);
                     conn.send("Initial crdt:"+crdt);
                 }
-                else if(data.startsWith("Initial crdt")){
+                else if(data.startsWith("Initial crdt")) {
                     var crdt = data.replace("Initial crdt:",""); 
                     crdt = JSON.parse(crdt); 
                     if(crdt.struct!=undefined){
@@ -99,14 +98,13 @@
                         //Assign it to my struct
                         syncStruct(crdt.struct, crdt.text);
                         //Assign the text to my editor
-                        //simplemde.value(crdt.text); 
                         console.log("recvd text: "+crdt.text);
                         canChange = false;
                         var document = editor.getSession().getDocument(); 
                         document.setValue(crdt.text);
                         canChange = true;
                     }
-                    else{
+                    else {
                         console.log("Struct is undefined");
                         console.log(crdt);
                     }                    
@@ -130,7 +128,7 @@
                     document.setValue(text);
                     canChange = true;
                 }
-                else if(data.startsWith("SyncConnect")){                    
+                else if(data.startsWith("SyncConnect")) {                    
                     console.log("Going to sync my connections");
                     var idToConnect = data.split(":")[1];
                     //Adding the received new peerid to my connections
@@ -144,7 +142,7 @@
                         });
                       }
                 }
-                else if(data.startsWith("Sending new connection")){                    
+                else if(data.startsWith("Sending new connection")) {                    
                     console.log("Adding the newest connection");
                     var peerId = data.split(":")[1];
                     if(connections[peerId]==null){
@@ -156,7 +154,7 @@
                     console.log("New connection list");
                     console.log(connections);              
                 }
-                else{
+                else {
                     console.log("recv remove commands"); 
                 }
             });
@@ -168,11 +166,11 @@
             io.emit('end');
         });
         peer.on("error", err => {
-        const pid = String(err).replace("Error: Could not connect to peer ", "");
-        console.log(err.type);
-        if(err.type == "peer-unavailable"){
-            $(location).attr('href', 'http://localhost:3000/error')
-        }
+            const pid = String(err).replace("Error: Could not connect to peer ", "");
+            console.log(err.type);
+            if(err.type == "peer-unavailable"){
+                $(location).attr('href', 'http://localhost:3000/error')
+            }
         });
 
         
