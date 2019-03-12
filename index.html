@@ -114,16 +114,21 @@
                 else if(data.startsWith("Insert")) {	
                     var connect = data.replace("Insert:","");
                     console.log("HTML remote "+JSON.parse(connect).Insert.value);
+                    var localCursor = editor.getSession().getDocument().positionToIndex(editor.selection.getCursor());
                     var text = LogRemoteInsertData(JSON.parse(connect).Insert, connect);
-                    console.log("TEXT "+text);
+                    console.log("TEXT "+text.split("BREAK")[0]);
                     canChange = false;
                     var document = editor.getSession().getDocument(); 
-                    document.setValue(text);
+                    document.setValue(text.split("BREAK")[0]);
                     canChange = true;
+                    editor.selection.moveCursorToPosition(editor.getSession().getDocument().indexToPosition(localCursor));
+                    //editor.getSession().getDocument().indexToPosition(localCursor);
+                    //console.log(editor.getCursor());
                 }
                 else if(data.startsWith("Delete")) {	
                     var connect = data.replace("Delete:","").split("break");
                     console.log("HTML remote "+JSON.parse(connect[0]).Insert.value);
+                    var localCursor = editor.getSession().getDocument().positionToIndex(editor.selection.getCursor());
                     var text = LogRemoteDeleteData(JSON.parse(connect[0]).Insert, connect[1]);
                     canChange = false;
                     var document = editor.getSession().getDocument(); 
