@@ -293,8 +293,8 @@
                 <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
                 <script type="text/javascript" src="/socket.io/socket.io.js"></script>
                 <script type="text/javascript">
-               
-                var socket = io.connect('http://localhost:3000', {'reconnection': false});
+                
+                var socket = io.connect(window.location.origin);
                 
                     $('input[type="submit"]').prop('disabled', true); 
                     $( "#msg_text" ).focus(function() {
