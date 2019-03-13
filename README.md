@@ -13,8 +13,10 @@ Install node.js Version 10.15.3 in your system.
 #### Run the server using the following command from the command prompt 
 > node app.js
 
-Use the link that displays in the command prompt to open the initial editor(initiator) in the browser
+- Use the link that displays in the command prompt to open the initial editor(initiator) in the browser
 
-Click the **Share URL** button to get the link for sharing with other users to collaborate
+- Click the **Share URL** button to get the link for sharing with other users to collaborate
 
-When others use this URL they can connect with the initiator and other users who are using this URL.
+- When a user uses this URL they can connect with the initiator and other users who are using this URL.
+
+- For using chat feature, enter your name in the name text box and the text to be sent at the bottom and click on **Send** button.
