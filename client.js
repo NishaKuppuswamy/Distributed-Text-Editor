@@ -1,6 +1,5 @@
 let controller = require('./CrdtController');
 let CrdtController = controller.CrdtController;
-const {parse, stringify} = require('flatted/cjs');
 var crdtController;
 var r;
 window.getURL =function(ip){

@@ -133,7 +133,7 @@ class CRDT {
       return right;
     } 
     else {
-      throw new Error("No such character exists in CRDT");
+      console.log("No such character exists in CRDT");
     }
   }
 
@@ -182,7 +182,7 @@ class CRDT {
         return this.getPositionBetween(pos1.slice(1), pos2.slice(1), newPos, level+1);
       } 
       else {
-        throw new Error("Fix Position Sorting");
+        console.log("Fix Position Sorting");
       }
     }
   }

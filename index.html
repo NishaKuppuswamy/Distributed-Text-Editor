@@ -28,6 +28,10 @@
                 }
            }
         var editor = ace.edit("editor");
+        $('.ace_editor').each(function( index ) {
+            editor = ace.edit(this);
+            editor.setFontSize("18px");
+        });
         editor.setTheme("ace/theme/chrome");  
  		editor.session.setOptions({tabSize: 1}); 
         editor.setShowPrintMargin(false);   
@@ -276,7 +280,7 @@
             
         <div class="left">
             <p>
-                <i>Decentralized Real-Time Collaborative Editor using CRDT</i>
+               <h3> <i>Decentralized Real-Time Collaborative Editor using CRDT</i></h3>
             </p>
             <div id="editor"></div>  
 
