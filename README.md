@@ -1,6 +1,6 @@
 # Distributed-Text-Editor
 #### Download the project folder Distributed-Text-Editor
-Install node.js Version 10.15.3 in your system.
+Install node.js Version 10.15.3 in your system and **Chrome** browser for testing.
 #### After downloading the project folder, use cd command to change the current working directory to the project folder 
 #### Install the following modules using npm install 
 - npm install peer
