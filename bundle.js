@@ -83,7 +83,6 @@ module.exports = {
 let controller = require('./CrdtController');
 let CrdtController = controller.CrdtController;
 var crdtController;
-var r;
 window.getURL =function(ip){
   document.getElementById('url').innerHTML = "http://"+ip+":3000/shared?id="+crdtController.peerId;
 };
@@ -127,24 +126,29 @@ let VersionList = version.VersionList;
 
 class CRDT {
   constructor(peerId, base=32, boundary=10, strategy='random', multiplyFactor=2) { 
-    this.peerId = peerId;
+    this.peerId = peerId; // unique identifier for each node
     this.base = base;
     this.boundary = boundary;
     this.strategy = strategy;
     this.strategyCache = [];
     this.multiplyFactor = multiplyFactor;
     this.list = new VersionList(peerId);
-    this.struct = [];    
+    this.struct = []; // array that stores crdt objects   
     this.text = "";
   }
 
+  //called when local insert event happens in browser
+  //val - value entered by user
+  //index - index position in the editor 
+  //connections -  existing connections with the peer
+  //insert object in its own array and broadcasts to the other peers through connections
   localInsert(val, index, connections) {
     this.list.incCounter();
     console.log(this.list);
     const char = this.createChar(val, index);
     this.struct.splice(index, 0, char);
     this.insertChar(char.value, index);
-    //Broadcast the insert to all my coonections
+    //Broadcast the insert to all my connections
     this.broadcast(char, connections, "insert"); 
   }
   
@@ -167,6 +171,10 @@ class CRDT {
 	  }
   }
 
+  //called when a remote user inserts a value
+  //char - crdt object
+  //finds the position to insert in the local array
+  //inserts inside the index position and updates the text string
   remoteInsert(char) {
 	  console.log("Remote insert "+char.value);
     const index = this.findInsertIndex(char);
@@ -175,6 +183,8 @@ class CRDT {
     return this.text;
   }
 
+  // deletes the object from the index position (charId)
+  // broadcast the insert operation to others
   localDelete(charId, connections) {
     this.list.incCounter();
     console.log(this.list);
@@ -184,6 +194,9 @@ class CRDT {
     this.broadcast(char, connections, "delete"); 
   }
 
+  //deletes the char object from remote delete operation
+  //finds the index position to delete
+  //deletes from the array and text string
   remoteDelete(char, peerId) {	  
 	  console.log("Remote delete"+ char.value);
     const index = this.findIndexByPosition(char);
@@ -192,6 +205,7 @@ class CRDT {
     return this.text;
   }
 
+  // binary searches the char object in the array
   findInsertIndex(char) {
     let left = 0;
     let right = this.struct.length - 1;
@@ -222,6 +236,7 @@ class CRDT {
     return char.compareTo(this.struct[left]) === 0 ? left : right;
   }
 
+  //binary searches the char object in the array
   findIndexByPosition(char) {
     let left = 0;
     let right = this.struct.length - 1;
@@ -257,6 +272,7 @@ class CRDT {
     }
   }
 
+  //creates a char object for each value
   createChar(val, index) {
     const positionBefore = (this.struct[index - 1] && this.struct[index - 1].position) || [];
     const positionAfter = (this.struct[index] && this.struct[index].position) || [];
@@ -272,6 +288,8 @@ class CRDT {
     return strategy;
   }
 
+  //finds the new index position based on the neighbours pos1 and pos2
+  //if the neighbours have many levels, it should search recursively 
   getPositionBetween(pos1, pos2, newPos=[], level=0) {
     let base = Math.pow(this.multiplyFactor, level) * this.base;
     let boundaryStrategy = this.getStrategy(level);
@@ -323,6 +341,7 @@ class CRDT {
     return Math.floor(Math.random() * (max - min)) + min;
   }
 
+  //inserts value to the text string
   insertChar(val, index) {
     if(val.length == 0) {
       val = "\n";
@@ -332,6 +351,7 @@ class CRDT {
     console.log(this.text);
   }
 
+  // deletes char object at index
   deleteChar(index) {
     this.text = this.text.slice(0, index) + this.text.slice(index + 1);
     console.log("Deleting char");

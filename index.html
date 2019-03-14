@@ -126,8 +126,6 @@
                     document.setValue(text.split("BREAK")[0]);
                     canChange = true;
                     editor.selection.moveCursorToPosition(editor.getSession().getDocument().indexToPosition(localCursor));
-                    //editor.getSession().getDocument().indexToPosition(localCursor);
-                    //console.log(editor.getCursor());
                 }
                 else if(data.startsWith("Delete")) {	
                     var connect = data.replace("Delete:","").split("break");
@@ -224,7 +222,6 @@
 
             function addIP(ip) {
                 ips.push(ip);
-            //console.log(ips);
             }
 
             findIP(addIP);

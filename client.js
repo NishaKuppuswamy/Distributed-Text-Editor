@@ -1,7 +1,6 @@
 let controller = require('./CrdtController');
 let CrdtController = controller.CrdtController;
 var crdtController;
-var r;
 window.getURL =function(ip){
   document.getElementById('url').innerHTML = "http://"+ip+":3000/shared?id="+crdtController.peerId;
 };

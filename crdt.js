@@ -29,7 +29,7 @@ class CRDT {
     const char = this.createChar(val, index);
     this.struct.splice(index, 0, char);
     this.insertChar(char.value, index);
-    //Broadcast the insert to all my coonections
+    //Broadcast the insert to all my connections
     this.broadcast(char, connections, "insert"); 
   }
   

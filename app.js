@@ -1,6 +1,5 @@
 var express = require('express');
 var app = express();
-const path = require('path'); 
 var fs = require('fs');
 var http = require('http'); 
 var ip = require('ip');
@@ -13,7 +12,6 @@ app.get('/', function (req, res) {
 });
 
 app.get('/shared', function (req, res) {
-    //console.log(req.query.id);
     res.sendFile('/index.html', { root: __dirname })    
 });
 
@@ -24,14 +22,9 @@ app.get('/error', function(req, res){
 var server = http.createServer(app);
 console.log("http://"+ip.address()+":"+ 3000);
 var io = require('socket.io')(server);
-//var sockets = {}, nextSocketId = 0;
 
 io.on("connection", function(socket){
-   // var socketId = nextSocketId++;
-  // sockets[socketId] = socket;
     socket.on("send message", function(sent_msg, callback){
-        //sent_msg = "[ " + getCurrentDate() + " ]: " + sent_msg;
-
         io.sockets.emit("update messages", sent_msg);
         callback();
     });
