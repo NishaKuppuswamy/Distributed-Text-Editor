@@ -1,3 +1,5 @@
+A decentralized, real time, collaborative text editor using Serverless Peer to Peer System and Conflict-free Replicated Data Types to enhance scalability and performance. 
+
 # Distributed-Text-Editor
 #### Download the project folder Distributed-Text-Editor
 Install node.js Version 10.15.3 in your system and **Chrome** browser for testing.
